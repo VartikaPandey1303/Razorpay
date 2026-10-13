@@ -1,283 +1,245 @@
-// Shared Collect v8 — Playwright click-through. Fails on any console error,
-// UNWIRED BUTTON / UNKNOWN ACTION, wrong number, or horizontal scroll at 390px.
-// Usage: node fitcheck/mvp-test.js   (needs the `playwright` package)
+// Shared Collect — Playwright click-through.
+// Fails on: any console error (incl. UNWIRED BUTTON / UNKNOWN ACTION), a wrong number,
+// internal jargon on owner screens, or sideways scrolling at 390px.
+// Usage: NODE_PATH=$(npm root -g) node fitcheck/mvp-test.js
 const fs = require('fs');
 const path = require('path');
 const { chromium } = require('playwright');
 
-const SRC = path.join(__dirname, '..', 'index.html');
-const OUT = path.join(__dirname, '.wrapped.html');
-// The host wraps the page in a skeleton at publish time; do the same here.
-fs.writeFileSync(OUT, `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>${fs.readFileSync(SRC, 'utf8')}</body></html>`);
-const URL = 'file://' + OUT;
-
+const FILE = 'file://' + path.join(__dirname, '..', 'index.html');
 let failures = 0, passes = 0;
-const ok = (cond, msg) => { if(cond){ passes++; } else { failures++; console.log('  ✗ ' + msg); } };
-const eq = (a, b, msg) => ok(JSON.stringify(a) === JSON.stringify(b), `${msg}: expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`);
+const ok = (c, m) => { if(c) passes++; else { failures++; console.log('  ✗ ' + m); } };
+const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), `${m}: expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`);
+const BANNED = /provisional|ledger|agent-handled|evidence|\bbooked\b|\bpool\b|confidence|\bv1\b|scenario|reconcil|exception|stakeholder/i;
+const CLINIC = "Echo machine EMI of ₹40,000, paid on the 5th, split by number of scans each of us did. Consultation rooms rent of ₹45,000, paid on the 5th, split by sessions. Sunita's salary (technician and front desk) ₹25,000, paid on the 7th, split equally between all four of us. Utilities ₹10,000, paid on the 20th — Dhruv pays one-third as he only comes on Tuesdays, the rest split equally.";
 
-async function newPage(browser, width){
+async function open(browser, query, width){
   const ctx = await browser.newContext({ viewport:{ width:width || 1280, height:900 } });
   await ctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status:200, contentType:'text/css', body:'' }));
   const page = await ctx.newPage();
   page.errors = [];
   page.on('console', m => { if(m.type() === 'error') page.errors.push(m.text()); });
   page.on('pageerror', e => page.errors.push('pageerror: ' + e.message));
-  await page.goto(URL);
-  await page.evaluate(() => { try{ localStorage.clear(); }catch(e){} });
-  await page.goto(URL);
+  await page.goto(FILE + (query || ''));
+  await page.evaluate(() => { localStorage.clear(); });
+  await page.goto(FILE + (query || ''));
   return page;
 }
-const btn = (page, name) => page.locator('#app button', { hasText:name }).filter({ visible:true }).first();
-async function click(page, name){ const b = btn(page, name); await b.waitFor({ state:'visible', timeout:3000 }); ok(await b.isEnabled(), `button "${name}" enabled`); await b.click(); }
-async function nav(page, label){ await page.locator('.rail .nav button', { hasText:label }).first().click(); }
 const text = async page => (await page.locator('#app').textContent()).replace(/\s+/g, ' ');
-const flushErrors = (page, where) => { ok(page.errors.length === 0, `no console errors at ${where}: ${page.errors.join(' | ')}`); page.errors = []; };
-
-// Click every visible enabled button once, restoring state after each.
+const btn = (page, name) => page.locator('#app > :not(.demobar) button', { hasText:name }).filter({ visible:true }).first();
+async function click(page, name){ const b = btn(page, name); await b.waitFor({ state:'visible', timeout:3000 }); ok(await b.isEnabled(), `“${name}” is enabled`); await b.click(); await page.waitForTimeout(20); }
+const next = async page => { await page.locator('.demobar .nx').click(); await page.waitForTimeout(20); };
+const nextLabel = page => page.locator('.demobar .nx').textContent();
+const flush = (page, where) => { ok(page.errors.length === 0, `no console errors at ${where}: ${page.errors.join(' | ')}`); page.errors = []; };
+async function noJargon(page, where){ const t = await page.locator('#app').innerText(); const m = t.match(BANNED); ok(!m, `no internal jargon at ${where}${m ? ': “' + m[0] + '”' : ''}`); }
 async function crawl(page, where){
   const snap = await page.evaluate(() => JSON.stringify(S));
   const n = await page.locator('#app button:visible').count();
   let clicked = 0;
   for(let k = 0; k < n; k++){
     const loc = page.locator('#app button:visible').nth(k);
-    if(!(await loc.count())) break;
-    if(!(await loc.isEnabled())) continue;
-    const action = await loc.getAttribute('data-action');
-    if(action === 'reset') continue;
-    try{ await loc.click({ timeout:1000 }); clicked++; }catch(e){ /* layout moved; ignore */ }
+    if(!(await loc.count()) || !(await loc.isEnabled())) continue;
+    if((await loc.getAttribute('data-action')) === 'demoRestart') continue;
+    try{ await loc.click({ timeout:800 }); clicked++; await page.waitForTimeout(10); }catch(e){}
     await page.evaluate(s => { S = JSON.parse(s); render(); }, snap);
   }
-  // inputs/selects fire change through the same dispatcher
-  flushErrors(page, `crawl ${where} (${clicked} buttons)`);
+  flush(page, `crawl ${where} (${clicked} buttons)`);
 }
 
 (async () => {
-  const browser = await chromium.launch({ executablePath:fs.existsSync('/opt/pw-browsers/chromium') ? undefined : undefined });
+  const browser = await chromium.launch();
 
-  /* 1 — engine numbers */
-  console.log('1. Rules engine');
+  console.log('1. Rules engine and AI stand-ins');
   {
-    const page = await newPage(browser);
-    const r = await page.evaluate(() => {
-      fresh('clinic', true); A.draftRule();
-      const sh = computeShares(S.lines, S.counts).total;
-      const out = S.outflows;
-      const inf7 = [{d:'2026-09-03', amt:34636},{d:DUE, amt:34116},{d:'2026-10-20', amt:30082},{d:DUE, amt:21166}];
-      const g1 = cashGap(out, inf7, '2026-10-07');
-      const g2 = cashGap(out, inf7.filter((_, i) => i !== 3), '2026-10-07');
-      return { sh, hits:S.rule.hits, modes:S.lines.map(l => l.mode + ':' + (l.unit || '')), g1, g2,
-        intent:classify(TPL.clinic.reply).intent, sum:Object.values(sh).reduce((a, b) => a + b, 0) };
+    const p = await open(browser, '?demo');
+    const r = await p.evaluate(text => {
+      fresh(); A.demoFillPeople();
+      const d = localDraft(text, colleagues());
+      S.costs = d.costs;
+      const sh = computeShares(S.costs, allIds(), exampleCounts()).total;
+      const g1 = cashGap(outflows(), [{d:'2026-09-01', amt:34636}, {d:DUE, amt:34116}, {d:'2026-10-20', amt:30082}, {d:DUE, amt:21166}], '2026-10-07');
+      const g2 = cashGap(outflows(), [{d:'2026-09-01', amt:34636}, {d:DUE, amt:34116}, {d:'2026-10-20', amt:30082}], '2026-10-07');
+      const read = localRead('Meera ji, is month thoda tight hai. 20 tak kar dunga, pakka.');
+      return { names:d.costs.map(c => c.name), methods:d.costs.map(c => c.method + ':' + (c.measure || Object.keys(c.shares).join(''))), days:d.costs.map(c => c.payDay), q:d.questions.length,
+        sh:[sh.me, sh.p1, sh.p2, sh.p3], g1, g2:g2.gap, read:[read.intent, read.date] };
+    }, CLINIC);
+    eq(r.names, ['Echo machine EMI','Consultation rooms rent','Sunita\'s salary','Utilities'], 'cost names');
+    eq(r.methods, ['count:scans','count:sessions','equal:','share:p3'], 'split methods');
+    eq(r.days, [5, 5, 7, 20], 'pay days');
+    eq(r.q, 0, 'no open questions');
+    eq(r.sh, [34636, 34116, 30082, 21166], 'shares');
+    eq(r.g1, {need:110000, inflow:89918, gap:20082}, 'gap on 7 Oct');
+    eq(r.g2, 41248, 'gap if Dhruv is not counted');
+    eq(r.read, ['more-time', '2026-10-20'], 'reply read as more time, by 20 Oct');
+    const other = await p.evaluate(() => {
+      const ppl = n => n.map((x, i) => ({id:'p' + (i + 1), name:x, phone:''}));
+      const renal = localDraft('Dialysis machine lease ₹60,000, paid on the 3rd, split by dialysis sessions. Nurse salary ₹30,000 split equally. Water plant ₹9,000 — Rao pays 50%.', ppl(['Dr Rao','Dr Iyer']));
+      const kitchen = localDraft('Combi oven EMI ₹40,000 split by orders. Kitchen rent ₹45,000 split by shifts. Ravi\'s salary ₹25,000 split equally. Gas ₹10,000 — Sweet Spot pays ₹2,000 flat, rest equally.', ppl(['Tandoor Co','Bowl Theory','Sweet Spot']));
+      const unknown = localDraft('Rent ₹30,000 — Kabir pays a third.', ppl(['Ishita']));
+      const sum = (d, ids) => Object.values(computeShares(d.costs, ids, Object.fromEntries(d.costs.filter(c => c.measure).map(c => [c.measure, Object.fromEntries(ids.map((id, k) => [id, k + 3]))]))).total).reduce((a, b) => a + b, 0);
+      return { renal:renal.costs.map(c => c.method + ':' + (c.measure || JSON.stringify(c.shares))), renalSum:sum(renal, ['me','p1','p2']),
+        kitchen:kitchen.costs.map(c => c.name + ':' + c.method + ':' + (c.measure || JSON.stringify(c.fixed))), kitchenSum:sum(kitchen, ['me','p1','p2','p3']),
+        unknownQ:unknown.questions.map(q => q.kind) };
     });
-    eq(r.sh, {A:34636, B:34116, C:30082, D:21166}, 'shares');
-    eq(r.sum, 120000, 'shares sum to pool');
-    eq(r.hits, 4, 'rule lines recognised');
-    eq(r.modes, ['count:scans','count:sessions','equal:','third:'], 'rule modes');
-    eq(r.g1, {need:110000, inflow:89918, gap:20082}, 'cash gap 7 Oct, D expected');
-    eq(r.g2.gap, 41248, 'cash gap 7 Oct, D not expected');
-    eq(r.intent, 'request-time', 'Arjun reply intent');
-    flushErrors(page, 'engine');
-    await page.context().close();
-  }
-
-  /* 2 — click-through of the default path */
-  console.log('2. Default path, by clicking');
-  const page = await newPage(browser);
-  {
-    ok((await text(page)).includes('Shared Cost Recovery Agent'), 'install page');
-    ok(await page.locator('.rail .nav button[data-arg="setup"]').isDisabled(), 'nav disabled before workspace');
-    await click(page, 'Continue');
-    ok((await page.locator('h1').first().innerText()) === 'Setup', 'landed on Setup');
-    await crawl(page, 'setup (before draft)');
-    await click(page, 'Draft the rule');
-    ok((await text(page)).includes('4 of 4 lines recognised'), 'draft shows 4 of 4');
-    ok((await text(page)).includes('This is what each stakeholder sees before any bill'), 'fairness caption');
-    await crawl(page, 'setup (drafted)');
-    await click(page, 'Looks right → invite stakeholders');
-    ok((await text(page)).includes('What Dr Bhatt will see'), 'invite preview');
-    await crawl(page, 'invite');
-    await click(page, 'Send rule v1');
-    ok((await text(page)).includes('Agent handles 0 of 3 · all 3 invoiced'), 'handles 0 of 3 after send');
-
-    // Dr Arjun accepts on his own page; Bhatt and Dhruv via the scenario drawer
-    await click(page, 'Preview stakeholder page');
-    await crawl(page, 'stakeholder page (awaiting)');
-    await click(page, 'Accept the rule');
-    await page.locator('.fab').click();
-    await page.locator('.drawer button', { hasText:'Dr Bhatt accepts the rule' }).click();
-    await page.locator('.drawer button', { hasText:'Dr Dhruv accepts the rule' }).click();
-    await page.locator('.drawer button[data-action="toggleDrawer"]').click();
-    await nav(page, 'Stakeholders');
-    ok((await text(page)).includes('Agent handles 3 of 3 · all 3 invoiced'), 'handles 3 of 3');
-    ok((await page.locator('.rail .status').innerText()).includes('Active · review-first'), 'rail says active');
-
-    // counts arrive, resolve the planted discrepancy, issue
-    await nav(page, 'Usage & billing');
-    ok((await text(page)).includes('waiting for counts'), 'billing waiting for counts');
-    ok(await btn(page, 'Issue invoices and virtual accounts').isDisabled(), 'issue disabled without counts');
-    await crawl(page, 'usage (waiting)');
-    await click(page, 'Upload sheet');
-    await click(page, 'Use sample sheet');
-    ok((await text(page)).includes('Dropped patient_name, patient_phone, referred_by'), 'CSV connector drops identity columns');
-    ok((await text(page)).includes('register 48, machine log 50'), 'exception card');
-    ok(await btn(page, 'Issue invoices and virtual accounts').isDisabled(), 'issue disabled with open exception');
-    await crawl(page, 'usage (exception)');
-    await click(page, 'Use register (48)');
-    await page.evaluate(() => { S.today = '2026-09-03'; render(); });
-    await click(page, 'Issue invoices and virtual accounts');
-    const sh = await page.evaluate(() => shares());
-    eq(sh, {A:34636, B:34116, C:30082, D:21166}, 'billed shares');
-    ok((await text(page)).includes('issued 3 Sept'), 'issued pill');
-    await crawl(page, 'usage (issued)');
-
-    // advance to Arjun's reply
-    await page.locator('.fab').click();
-    for(let k = 0; k < 8 && (await page.evaluate(() => S.today)) !== '2026-09-25'; k++) await page.locator('.drawer button[data-action="advance"]').click();
-    ok(await page.evaluate(() => S.today) === '2026-09-25', 'advanced to 25 Sept');
-    await page.locator('.drawer button[data-action="toggleDrawer"]').click();
-    await nav(page, 'Decisions');
-    const dt = await text(page);
-    ok(dt.includes('is month thoda tight hai'), 'reply quote');
-    ok(dt.includes('request-time'), 'intent pill');
-    ok(dt.includes('₹20,082 by 30 Sept and ₹10,000 by 20 Oct'), 'proposed ask amounts');
-    ok(dt.includes('Agar nahi, batao kya possible hai.'), 'operator line in draft');
-    ok(dt.includes('Gap on 7 Oct') && dt.includes('₹20,082'), 'gap ₹20,082 on card');
-    await page.locator('input[data-action="toggleExpectD"]').uncheck();
-    ok((await text(page)).includes('₹41,248'), 'gap with D not expected');
-    await page.locator('input[data-action="toggleExpectD"]').check();
-    await crawl(page, 'decisions (reply open)');
-    await click(page, 'WhatsApp view');
-    await crawl(page, 'decisions (WhatsApp view)');
-    await click(page, 'Card view');
-    await page.locator('.drafts .opt[data-tone="warm"]').click();
-    ok(await page.evaluate(() => S.tone) === 'warm', 'tone stored');
-    ok(await page.evaluate(() => S.planC && S.planC.inst1 === 20082 && S.planC.inst2 === 10000), 'plan stored from rules');
-
-    // Arjun's page shows the plan; accept it there
-    await page.evaluate(() => { S.viewPayer = 'C'; S.page = 'payer'; render(); });
-    ok((await text(page)).includes('Accept the plan'), 'plan pending on his page');
-    await crawl(page, 'stakeholder page (plan pending)');
-    await click(page, 'Accept the plan');
-
-    // run to month end, approving the pre-due nudge
-    await page.locator('.fab').click();
-    for(let k = 0; k < 20; k++){
-      const adv = page.locator('.drawer button[data-action="advance"]');
-      if(!(await adv.count())) break;
-      await adv.click();
-      if(await page.evaluate(() => openItems().some(i => i.kind === 'prelate'))){
-        await page.locator('.drawer button[data-action="toggleDrawer"]').click();
-        await nav(page, 'Decisions');
-        ok((await text(page)).includes('Tone: warm'), 'later card shows tone');
-        await crawl(page, 'decisions (prelate)');
-        await click(page, 'Approve');
-        await page.locator('.fab').click();
-      }
-    }
-    ok(await page.evaluate(() => S.closed), 'cycle closed');
-    if(await page.locator('.drawer').count()) await page.locator('.drawer button[data-action="toggleDrawer"]').click();
-    await nav(page, 'Month report');
-    const rt = await text(page);
-    ok(/Covered by original due\s*74%/.test(rt), 'covered by original due 74%');
-    ok(/External by original due\s*63%/.test(rt), 'external by original due 63%');
-    ok(rt.includes('₹54,198 of ₹85,364'), 'external ₹54,198 of ₹85,364');
-    ok(/Collected to date\s*100%/.test(rt), 'collected 100%');
-    ok(rt.includes('operator-confirmed') && rt.includes('observed once'), 'learned pills');
-    await crawl(page, 'report');
-    for(const p of ['Overview','Stakeholders','Activity','Usage & billing','Decisions']){ await nav(page, p); await crawl(page, p + ' (closed)'); }
-  }
-
-  /* 3 — every sheet opens and closes cleanly */
-  console.log('3. Sheets');
-  {
-    const kinds = await page.evaluate(() => {
-      const out = [];
-      const tries = [['math',{id:'C',key:'equip'}],['question',{id:'scans:A'}],['request-time',{id:'D'}],['neft',{id:'B'}],['menu',{id:'C'}],['menu',{id:'C',sub:'log'}],['menu',{id:'C',sub:'rule'}],['menu',{id:'C',sub:'question'}],['invoice',{id:'B'}],['source',{id:'invoices'}],['source',{id:'whatsapp'}],['source',{id:'connector'}],['source',{id:'never'}],['source',{id:'second'}],['about',{}]];
-      tries.forEach(([k, p]) => { S.sheet = {kind:k, payload:p}; render(); out.push(k + ':' + !!document.querySelector('.sheet')); });
-      S.sheet = null; render(); return out;
-    });
-    ok(kinds.every(k => k.endsWith('true')), 'all sheet variants render: ' + kinds.join(','));
-    flushErrors(page, 'sheets');
-  }
-
-  /* 4 — 390px, every page, no horizontal scroll */
-  console.log('4. 390px layout');
-  {
-    const snap = await page.evaluate(() => JSON.stringify(S));
-    await page.setViewportSize({ width:390, height:844 });
-    for(const p of ['overview','setup','stakeholders','usage','decisions','payer','activity','report']){
-      await page.evaluate(([s, pg]) => { S = JSON.parse(s); S.page = pg; render(); }, [snap, p]);
-      const w = await page.evaluate(() => document.documentElement.scrollWidth);
-      ok(w <= 390, `no horizontal scroll on ${p} (scrollWidth ${w})`);
-    }
-    await page.evaluate(s => { S = JSON.parse(s); S.page = 'setup'; S.setupStep = 'invite'; render(); }, snap);
-    ok(await page.evaluate(() => document.documentElement.scrollWidth) <= 390, 'no horizontal scroll on invite');
-    flushErrors(page, '390px');
-  }
-  await page.context().close();
-
-  /* 5 — scripted default path, ledger mode, provisional, workspaces */
-  console.log('5. Variants');
-  {
-    const p = await newPage(browser);
-    const r = await p.evaluate(() => { playDefault(); const m = metrics(); return [pct(m.byDue, m.p), pct(m.extByDue, m.extTotal), m.extByDue, m.extTotal, pct(m.coll, m.p)]; });
-    eq(r, [74, 63, 54198, 85364, 100], 'playDefault month end');
-
-    // ledger mode: Dhruv declines
-    await p.evaluate(() => { fresh('clinic', true); A.draftRule(); A.sendRule(); acceptRule('B'); acceptRule('C'); declineRule('D', 'Utilities by hours'); S.page = 'stakeholders'; render(); });
-    const lt = await text(p);
-    ok(lt.includes('Agent handles 2 of 3 · all 3 invoiced'), 'ledger: handles 2 of 3');
-    ok(lt.includes("Invoices and the activity log still cover Dr Dhruv; the agent won't message them."), 'ledger line');
-    const noD = await p.evaluate(() => { S.today = '2026-09-03'; receiveCounts(); S.exc['scans:A'] = 'register'; doIssue(false); for(let k = 0; k < 6; k++) advance(); return S.inbox.some(i => i.from === 'D'); });
-    ok(!noD, 'no decisions about a ledger-only stakeholder');
-
-    // edit after send bumps version and resets consent
-    const v = await p.evaluate(() => { fresh('clinic', true); A.draftRule(); A.sendRule(); acceptRule('B'); syncActive(); S.lines[3].amount = 12000; ruleEdited(); return [S.ruleVersion, S.consent.B, S.sentRule]; });
-    eq(v, [2, null, false], 'edit after send → v2, consent reset');
-
-    // provisional billing and true-up
-    const pr = await p.evaluate(() => { fresh('clinic', true); A.draftRule(); doIssue(true); const prov = S.provisional; S.page = 'payer'; S.viewPayer = 'C'; render();
-      const banner = document.body.innerText.includes('Based on last month\'s usage — will be corrected when counts arrive. You can pay now or wait.');
-      receiveCounts('System'); return [prov, banner, S.provisional, !!S.trueUp, Object.values(S.trueUp.diff).reduce((a, b) => a + b, 0)]; });
-    eq(pr, [true, true, false, true, 0], 'provisional → banner → true-up sums to 0');
-    await p.evaluate(() => { S.page = 'report'; render(); });
-    ok((await text(p)).includes('True-up next cycle'), 'true-up card in report');
-
-    // blocked sending / issuing with stated reasons
-    const bl = await p.evaluate(() => { fresh('clinic', true); A.draftRule(); S.sources.whatsapp = false; S.setupStep = 'invite'; S.page = 'setup'; render();
-      const r1 = document.body.innerText.includes('WhatsApp is disconnected'); S.sources.invoices = false; S.page = 'usage'; render();
-      return [r1, document.body.innerText.includes('Invoices & Smart Collect is disconnected')]; });
-    eq(bl, [true, true], 'blocked reasons shown');
-
-    for(const k of ['kitchen','cowork','other']){
-      await p.evaluate(k => { fresh(k, true); if(S.text) A.draftRule(); else { S.lines.forEach((l, i) => l.amount = [40000,45000,25000,10000][i]); S.manual = true; } render(); }, k);
-      for(const pg of ['setup','overview','stakeholders','usage','decisions','payer','activity','report']){ await p.evaluate(pg => { S.page = pg; render(); }, pg); }
-      const s = await p.evaluate(() => Object.values(computeShares(S.lines, S.counts).total).reduce((a, b) => a + b, 0));
-      eq(s, 120000, `${k}: shares sum`);
-    }
-    // stakeholder-originated cards
-    await p.evaluate(() => { fresh('clinic', true); A.draftRule(); A.sendRule(); questionLine('C', 'equip'); acceptRule('B'); S.page = 'decisions'; render(); });
-    await crawl(p, 'question card');
-    await p.evaluate(() => { acceptRule('C'); acceptRule('D'); receiveCounts(); S.exc['scans:A'] = 'register'; S.today = '2026-09-03'; doIssue(false); requestTime('D', '2026-10-07'); render(); });
-    await crawl(p, 'request-time card');
-    await p.evaluate(() => { for(let k = 0; k < 8 && !openItems().some(x => x.kind === 'reply'); k++) advance(); const i = openItems().find(x => x.kind === 'reply'); S.tone = 'direct'; approveDraft(i, draftText(i, 'direct'), 'approved'); counterOffer('C'); render(); });
-    await crawl(p, 'counter card');
-    flushErrors(p, 'variants');
+    eq(other.renal, ['count:dialysis sessions', 'equal:{}', 'share:{"p1":0.5}'], 'renal care: any measure, any share');
+    eq(other.renalSum, 99000, 'renal care: shares add up');
+    eq(other.kitchen, ['Combi oven EMI:count:orders', 'Kitchen rent:count:shifts', 'Ravi\'s salary:equal:{}', 'Gas:fixed:{"p3":2000}'], 'cloud kitchen: fixed amount');
+    eq(other.kitchenSum, 120000, 'cloud kitchen: shares add up');
+    eq(other.unknownQ, ['who'], 'unknown name becomes a question');
+    flush(p, 'engine');
     await p.context().close();
   }
 
-  /* 6 — static self-check of the source */
-  console.log('6. Source checks');
+  console.log('2. Merchant view (no demo controls, no jargon)');
   {
-    const src = fs.readFileSync(SRC, 'utf8');
-    ok(!/<!doctype|<html|<head|<body/i.test(src), 'no document skeleton in index.html');
-    ok(src.trimStart().startsWith('<title>Shared Collect MVP</title>'), 'title first');
-    ok(!/\b(alert|confirm|prompt)\(/.test(src.replace(/\/\/.*$/gm, '')), 'no alert/confirm/prompt');
-    const surface = src.replace(/kind === 'about'[\s\S]*?\} *\n  return `<div class="overlay"/, '');
-    ok(!/simulat|\bdemo\b/i.test(surface.replace(/function drawer[\s\S]*?\n}\n/, '').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '').replace(/label:'Clinic[^']*'/, '')), 'only About and the Scenario drawer mention simulation/demo');
+    const p = await open(browser, '');
+    ok(!(await p.locator('.demobar').count()), 'no demo bar without ?demo');
+    ok((await text(p)).includes('Meera Diagnostics') && (await text(p)).includes('from your Razorpay account'), 'business comes from the account');
+    ok(!(await p.locator('input[value="Meera Diagnostics"]').count()), 'business name is not editable');
+    await noJargon(p, 'welcome');
+    await click(p, 'Set up shared costs');
+    await click(p, 'Continue');
+    ok((await text(p)).includes('Add at least one person'), 'people step validates');
+    await p.locator('input[aria-label="Name 1"]').fill('Dr Bhatt');
+    await click(p, 'Add person'); await p.locator('input[aria-label="Name 2"]').fill('Dr Arjun');
+    await click(p, 'Add person'); await p.locator('input[aria-label="Name 3"]').fill('Dr Dhruv');
+    await noJargon(p, 'people');
+    await click(p, 'Continue');
+    await p.locator('textarea').fill(CLINIC);
+    await noJargon(p, 'describe');
+    await click(p, 'Draft my split');
+    await p.waitForTimeout(50);
+    const t = await text(p);
+    ok(t.includes('split by scans') && t.includes('Dr Dhruv pays one-third'), 'split read back as sentences');
+    await noJargon(p, 'check');
+    await crawl(p, 'check');
+    await click(p, 'Looks right');
+    ok((await text(p)).includes('How will you give us the monthly numbers'), 'asks how numbers arrive (usage-based costs)');
+    await click(p, 'Continue');
+    ok((await text(p)).includes('Add the name of who sends the numbers'), 'numbers step validates');
+    await p.locator('input[aria-label="Staff name"]').fill('Sunita');
+    await click(p, 'Continue');
+    await noJargon(p, 'send');
+    await click(p, 'See what Dr Bhatt will see');
+    ok((await p.locator('.modal').textContent()).includes('Accept'), 'preview shows their page');
+    await p.locator('.modal button[data-action="closePreview"]').click();
+    await click(p, 'Send to 3 people');
+    ok((await text(p)).includes('0 of 3 accepted'), 'lands on replies');
+    await noJargon(p, 'replies');
+    for(const tab of ['Home','People','Settings']){ await p.locator('.tabs button', { hasText:tab }).click(); await noJargon(p, tab); await crawl(p, tab); }
+    flush(p, 'merchant view');
+    await p.context().close();
   }
 
+  console.log('3. Full month, clicking through the demo');
+  const p = await open(browser, '?demo');
+  {
+    await click(p, 'Set up shared costs');
+    await click(p, 'Fill example'); await click(p, 'Continue');
+    await click(p, 'Fill example'); await click(p, 'Draft my split'); await p.waitForTimeout(50);
+    await click(p, 'Looks right');
+    await click(p, 'Fill example'); await click(p, 'Continue');
+    await click(p, 'Send to 3 people');
+    ok((await nextLabel(p)).includes('Dr Bhatt accepts'), 'demo next: Bhatt accepts');
+    await next(p); await next(p);
+    ok((await text(p)).includes('How are my scans counted'), 'Arjun’s question shows on replies');
+    await next(p);
+    ok((await nextLabel(p)).includes('Answer Dr Arjun'), 'demo waits for the owner to answer');
+    await p.locator('.tabs button', { hasText:'Home' }).click();
+    ok((await text(p)).includes('Dr Arjun has a question'), 'Home shows the question');
+    await click(p, 'Answer');
+    await crawl(p, 'replies with question');
+    await click(p, 'Send answer');
+    await next(p);
+    ok((await text(p)).includes('Everyone has accepted'), 'everyone accepted → clear next step');
+    await click(p, 'Go to Home');
+    ok((await nextLabel(p)).includes('Sunita sends'), 'demo next: Sunita sends numbers');
+    await next(p);
+    ok((await text(p)).includes("August's bills are ready to send"), 'Home: bills ready');
+    await click(p, 'Check and send');
+    const bt = await text(p);
+    ok(bt.includes('₹34,116') && bt.includes('₹30,082') && bt.includes('₹21,166') && bt.includes('₹34,636'), 'bill amounts');
+    await click(p, 'Dr Arjun');
+    ok((await text(p)).includes('38 of 154 scans × ₹40,000'), 'bill shows the maths');
+    await crawl(p, 'bill review');
+    await click(p, 'Send 3 bills');
+    for(let k = 0; k < 6 && !(await p.evaluate(() => openItems().length)); k++) await next(p);
+    ok((await text(p)).includes('Dr Arjun asked for more time'), 'Home: Arjun asked for time');
+    await click(p, 'Review');
+    const dt = await text(p);
+    ok(dt.includes('is month thoda tight hai') && dt.includes('Short on 7 Oct') && dt.includes('₹20,082'), 'decision shows what he said and the 7 Oct gap');
+    ok(dt.includes('₹20,082 by 30 Sept and ₹10,000 by 20 Oct') && dt.includes('Agar nahi, batao kya possible hai.'), 'suggested reply sized by the rule');
+    await p.locator('input[data-change="toggleExpect"]').uncheck(); await p.waitForTimeout(20);
+    ok((await text(p)).includes('₹41,248'), 'gap if Dhruv isn’t counted');
+    await p.locator('input[data-change="toggleExpect"]').check(); await p.waitForTimeout(20);
+    await crawl(p, 'decision');
+    await p.locator('.tones button[data-tone="warm"]').click(); await p.waitForTimeout(30);
+    ok(await p.evaluate(() => S.tone === 'warm' && S.plans.p2.status === 'proposed'), 'tone stored and plan offered');
+    await p.locator('.demobar .vw button', { hasText:'Dr Arjun’s phone' }).click();
+    ok((await text(p)).includes('Accept the plan'), 'Arjun sees the plan on his phone');
+    await crawl(p, 'Arjun’s phone (plan)');
+    await click(p, 'Accept the plan');
+    ok((await text(p)).includes('Pay ₹20,082 with UPI'), 'Arjun’s pay button shows the first part');
+    await p.locator('.demobar .vw button', { hasText:'owner' }).click();
+    for(let k = 0; k < 4 && !(await p.evaluate(() => openItems().length)); k++) await next(p);
+    ok((await text(p)).includes('Dr Dhruv is likely to pay late'), 'Home: Dhruv nudge');
+    await click(p, 'Review');
+    ok((await text(p)).includes('Tone: warm'), 'later drafts use the chosen tone');
+    await click(p, 'Send');
+    for(let k = 0; k < 20 && !(await p.evaluate(() => S.closed)); k++) await next(p);
+    const mt = await text(p);
+    ok(/In by the due date\s*74%/.test(mt), 'summary: 74% by due date');
+    ok(/From colleagues by the due date\s*63%/.test(mt) && mt.includes('₹54,198 of ₹85,364'), 'summary: 63% from colleagues (₹54,198 of ₹85,364)');
+    ok(/Collected now\s*100%/.test(mt), 'summary: 100% collected');
+    ok(mt.includes('only 40% of your colleagues'), 'summary: plain reminders would have been 40%');
+    await crawl(p, 'summary');
+    for(const v of ['Dr Bhatt’s phone','Dr Arjun’s phone','Dr Dhruv’s phone']){ await p.locator('.demobar .vw button', { hasText:v }).click(); await crawl(p, v + ' (closed)'); }
+    await p.locator('.demobar .vw button', { hasText:'owner' }).click();
+    for(const tab of ['Home','People','Settings']){ await p.locator('.tabs button', { hasText:tab }).click(); await crawl(p, tab + ' (closed)'); }
+    flush(p, 'full month');
+  }
+
+  console.log('4. Colleague-side flows');
+  {
+    const r = await p.evaluate(async () => {
+      fresh(); A.demoFillPeople(); A.demoFillText(); await A.draftSplit(); S.source.name = 'Sunita'; A.sendSplit();
+      doDecline('p3', 'Utilities should be by hours'); render();
+      const declined = document.body.innerText.includes('Decide what to do') || needsCards().some(c => /declined/.test(c[2]));
+      A.removeFromSplit({dataset:{id:'p3'}});
+      const afterRemove = [colleagues().length, status('p1'), S.version];
+      ['p1','p2'].forEach(doAccept); S.today = BILL_DAY; S.month.counts = exampleCounts(); A.sendBills();
+      await routeMessage('p1', 'My scans look too high, I did fewer.');
+      await routeMessage('p2', 'Can I pay on the 10th?');
+      return { declined, afterRemove, kinds:S.items.map(i => i.kind + ':' + (i.intent || i.date)) };
+    });
+    ok(r.declined, 'a decline lands on Home');
+    eq(r.afterRemove, [2, 'pending', 2], 'removing someone resends a new version');
+    eq(r.kinds, ['message:dispute', 'request:2026-10-10'], '“something’s not right” is read and routed');
+    await p.evaluate(() => { S.view = 'owner'; S.page = 'home'; render(); });
+    await crawl(p, 'Home with colleague messages');
+    flush(p, 'colleague flows');
+  }
+
+  console.log('5. Phone width (390px)');
+  {
+    await p.setViewportSize({ width:390, height:844 });
+    for(const pg of ['home','replies','bills','people','settings','split','month']){
+      await p.evaluate(pg => { S.view = 'owner'; S.page = pg; render(); }, pg);
+      ok(await p.evaluate(() => document.documentElement.scrollWidth) <= 390, `no sideways scroll: ${pg}`);
+    }
+    await p.evaluate(() => { S.page = 'decision'; S.arg = S.items[0].id; render(); });
+    ok(await p.evaluate(() => document.documentElement.scrollWidth) <= 390, 'no sideways scroll: decision');
+    await p.evaluate(() => { S.view = 'p:p1'; render(); });
+    ok(await p.evaluate(() => document.documentElement.scrollWidth) <= 390, 'no sideways scroll: colleague page');
+    for(const st of ['welcome','people','describe','check','numbers','send']){
+      await p.evaluate(st => { S.view = 'owner'; S.stage = st; render(); }, st);
+      ok(await p.evaluate(() => document.documentElement.scrollWidth) <= 390, `no sideways scroll: setup ${st}`);
+    }
+    flush(p, '390px');
+  }
+  await p.context().close();
+
   await browser.close();
-  try{ fs.unlinkSync(OUT); }catch(e){}
   console.log(`\n${passes} passed, ${failures} failed`);
   process.exit(failures ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });
