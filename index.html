@@ -627,7 +627,7 @@ function wCheck(){
 }
 function splitEditor(){
   return `${S.questions.map((q, k) => `<div class="question"><b>${ic('alert')} One thing I need:</b> ${esc(q.text)}
-      ${q.kind === 'who' ? `<div class="chips" style="margin-top:8px">${colleagues().map(p => `<button type="button" class="chip" data-action="answerWho" data-k="${k}" data-id="${p.id}">${esc(p.name)}</button>`).join('')}</div>` : `<div style="margin-top:6px">${b('Got it', 'dismissQ', {cls:'sm', d:{k}})}</div>`}</div>`).join('')}
+      ${q.kind === 'who' ? `<div class="chips" style="margin-top:8px">${allIds().map(id => `<button type="button" class="chip" data-action="answerWho" data-k="${k}" data-id="${id}">${esc(nm(id))}${id === 'me' ? ' (me)' : ''}</button>`).join('')}<button type="button" class="chip" data-action="answerWho" data-k="${k}" data-id="">Nobody — split it equally</button></div>` : `<div style="margin-top:6px">${b('Got it', 'dismissQ', {cls:'sm', d:{k}})}</div>`}</div>`).join('')}
   <div class="card">
     <div class="row sb" style="margin-bottom:10px"><h2 style="margin:0">${S.costs.length} cost${S.costs.length === 1 ? '' : 's'} · ${fmt(total())} a month</h2>${aiTag('Drafted by AI — check it')}</div>
     ${S.costs.map(costCard).join('')}
@@ -1214,7 +1214,7 @@ const A = {
   },
   addCost(){ const id = 'c' + S.seq++; S.costs.push({id, name:'New cost', amount:0, payDay:null, method:'equal', measure:'', shares:{}, fixed:{}}); S.editing = id; },
   removeCost(el){ S.costs = S.costs.filter(c => c.id !== el.dataset.id); S.editing = null; },
-  answerWho(el){ const k = +el.dataset.k, q = S.questions[k], c = S.costs.find(x => x.id === q.cost); if(c){ c.method = 'share'; c.shares = {[el.dataset.id]:q.frac || 1/3}; c.assumed = false; } S.questions.splice(k, 1); },
+  answerWho(el){ const k = +el.dataset.k, q = S.questions[k], c = S.costs.find(x => x.id === q.cost), id = el.dataset.id; if(c){ if(id){ c.method = 'share'; c.shares = {[id]:q.frac || 1/3}; } else { c.method = 'equal'; c.shares = {}; } c.assumed = false; } S.questions.splice(k, 1); },
   dismissQ(el){ S.questions.splice(+el.dataset.k, 1); },
   setSource(el){ S.source.type = el.dataset.arg; S.errors = {}; },
   sourceName(el){ S.source.name = el.value; },
