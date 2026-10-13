@@ -1,0 +1,1751 @@
+<title>Shared Collect MVP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f5f6f8;--panel:#ffffff;--panel2:#fafbfc;--ink:#10131f;--ink2:#474d63;--ink3:#7a8096;--line:#e3e6ed;--line2:#eef0f4;
+  --accent:#2f5bff;--accent-ink:#ffffff;--accent-soft:#eaf0ff;
+  --ok:#0f7f55;--ok-soft:#e3f5ec;--warn:#9a5b00;--warn-soft:#fff2d9;--bad:#c23434;--bad-soft:#fde9e9;
+  --ai:#6345f0;--ai-soft:#efebff;--rules:#0d6e80;--rules-soft:#e1f3f6;
+  --rail:#0a0b10;--rail-ink:#c9cbd6;--rail-ink2:#7b7f92;--shadow:0 1px 2px rgba(16,19,31,.05),0 4px 16px rgba(16,19,31,.05);
+  --wa-bg:#0b141a;--wa-in:#202c33;--wa-out:#005c4b;--wa-ink:#e9edef;
+  --sans:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --serif:"Instrument Serif",Georgia,"Times New Roman",serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c0e14;--panel:#141720;--panel2:#181b25;--ink:#e8eaf2;--ink2:#b3b8c9;--ink3:#80859a;--line:#262a37;--line2:#1e222d;
+    --accent:#6b8cff;--accent-ink:#0c0e14;--accent-soft:#1c2547;
+    --ok:#4cc58f;--ok-soft:#12291f;--warn:#f0b24a;--warn-soft:#2c2210;--bad:#f07a7a;--bad-soft:#321617;
+    --ai:#a493ff;--ai-soft:#231d42;--rules:#5fc4d6;--rules-soft:#10282d;--shadow:0 1px 2px rgba(0,0,0,.3);color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c0e14;--panel:#141720;--panel2:#181b25;--ink:#e8eaf2;--ink2:#b3b8c9;--ink3:#80859a;--line:#262a37;--line2:#1e222d;
+  --accent:#6b8cff;--accent-ink:#0c0e14;--accent-soft:#1c2547;
+  --ok:#4cc58f;--ok-soft:#12291f;--warn:#f0b24a;--warn-soft:#2c2210;--bad:#f07a7a;--bad-soft:#321617;
+  --ai:#a493ff;--ai-soft:#231d42;--rules:#5fc4d6;--rules-soft:#10282d;--shadow:0 1px 2px rgba(0,0,0,.3);color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.5 var(--sans);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+svg.i{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.mono{font-family:var(--mono);font-size:.92em}
+.mute{color:var(--ink3)}.ink2{color:var(--ink2)}
+.small{font-size:12.5px}.tiny{font-size:11.5px}
+.serif{font-family:var(--serif);font-weight:400}
+.shell{display:grid;grid-template-columns:236px minmax(0,1fr);min-height:100vh}
+.rail{background:var(--rail);color:var(--rail-ink);padding:18px 14px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh;overflow-y:auto}
+.brand{display:flex;align-items:center;gap:8px;color:#fff;font-weight:600;font-size:13px;padding:0 6px}
+.eyebrow{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--rail-ink2);padding:14px 6px 2px}
+.agent{font-family:var(--serif);font-size:22px;line-height:1.15;color:#fff;padding:0 6px}
+.status{display:flex;align-items:center;gap:7px;font-size:12px;padding:6px 6px 14px;color:var(--rail-ink)}
+.dot{width:7px;height:7px;border-radius:50%;background:#7b7f92;flex:none}.dot.on{background:#3ecf8e}.dot.mid{background:#f0b24a}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav button{all:unset;display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--rail-ink);font-size:13.5px;white-space:nowrap}
+.nav button:hover:not(:disabled){background:#1a1c25}
+.nav button.on{background:#1f2230;color:#fff}
+.nav button:disabled{opacity:.35;cursor:not-allowed}
+.nav .badge{margin-left:auto;background:#6345f0;color:#fff;border-radius:10px;font-size:11px;padding:0 7px;line-height:18px}
+.rail .grow{flex:1}
+.main{min-width:0;display:flex;flex-direction:column}
+.top{display:flex;align-items:center;gap:12px;padding:14px 28px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5}
+.crumb{font-size:12.5px;color:var(--ink3);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.crumb b{color:var(--ink);font-weight:500}
+.top .right{margin-left:auto;display:flex;gap:8px;flex:none}
+.content{padding:24px 28px 120px;max-width:1180px;width:100%;min-width:0}
+h1{font-family:var(--serif);font-weight:400;font-size:32px;line-height:1.1;margin:0 0 4px;letter-spacing:-.005em}
+h2{font-size:15px;font-weight:600;margin:0 0 10px}
+h3{font-size:13.5px;font-weight:600;margin:0 0 8px}
+h4{font-size:12px;font-weight:600;margin:14px 0 6px;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:6px}
+p{margin:0 0 8px}
+.lede{color:var(--ink2);margin:0 0 20px;max-width:720px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:var(--shadow);min-width:0}
+.card+.card{margin-top:14px}
+.g2>.card+.card,.g2e>.card+.card,.pcards>.card+.card{margin-top:0}
+.g2+.card,.g2e+.card,.card+.g2e,.card+.g2{margin-top:14px}
+.stack>*+*{margin-top:14px}
+.g2{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:16px}
+.g2e{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.g2>*,.g2e>*,.tiles>*{min-width:0}
+.tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.tiles.t3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.tile .k{font-size:11.5px;color:var(--ink3)}.tile .v{font-size:22px;font-weight:600;font-family:var(--mono);letter-spacing:-.02em;margin-top:2px}
+.tile .s{font-size:11.5px;color:var(--ink3)}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.row.sb{justify-content:space-between}
+.btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:9px;padding:7px 12px;cursor:pointer;font-size:13px;font-weight:500;line-height:1.3;text-align:left}
+.btn:hover:not(:disabled){border-color:var(--ink3)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover:not(:disabled){filter:brightness(1.07)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--ink2);padding:6px 8px}
+.btn.ghost:hover:not(:disabled){background:var(--line2);border-color:transparent}
+.btn.link{background:none;border:none;color:var(--accent);padding:2px 0;font-weight:500}
+.btn.danger{color:var(--bad)}
+.btn.sm{padding:4px 9px;font-size:12px;border-radius:7px}
+.btn.big{padding:10px 16px;font-size:14px}
+.btn.wide{width:100%;justify-content:center}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;background:var(--line2);color:var(--ink2);white-space:nowrap;line-height:18px;vertical-align:middle}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}.pill.warn{background:var(--warn-soft);color:var(--warn)}.pill.bad{background:var(--bad-soft);color:var(--bad)}
+.pill.ai{background:var(--ai-soft);color:var(--ai)}.pill.rules{background:var(--rules-soft);color:var(--rules)}.pill.acc{background:var(--accent-soft);color:var(--accent)}
+.prov{text-decoration:underline dotted var(--warn);text-underline-offset:3px;text-decoration-thickness:1.5px}
+.wrap{overflow-x:auto;max-width:100%}
+table.t{width:100%;border-collapse:collapse;font-size:13px}
+table.t th{text-align:left;font-weight:500;color:var(--ink3);font-size:11.5px;padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.t td{padding:8px;border-bottom:1px solid var(--line2);vertical-align:middle}
+table.t td.n,table.t th.n{text-align:right;font-family:var(--mono);white-space:nowrap}
+table.t tr:last-child td{border-bottom:none}
+table.t tfoot td{border-top:1px solid var(--line);font-weight:600}
+input[type=text],input[type=tel],input[type=date],input[type=number],select,textarea{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 9px;width:100%;min-width:0}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+input:disabled,select:disabled,textarea:disabled{opacity:.6}
+textarea{resize:vertical;min-height:110px;line-height:1.5}
+label.f{display:block;font-size:12px;color:var(--ink2);margin-bottom:4px;font-weight:500}
+.money{display:flex;align-items:center;gap:0;min-width:110px}
+.money span{padding:7px 0 7px 9px;border:1px solid var(--line);border-right:none;border-radius:8px 0 0 8px;background:var(--panel2);color:var(--ink3)}
+.money input{border-radius:0 8px 8px 0;font-family:var(--mono)}
+.note{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px;color:var(--ink2)}
+.note.warn{background:var(--warn-soft);border-color:transparent;color:var(--warn)}
+.note.bad{background:var(--bad-soft);border-color:transparent;color:var(--bad)}
+.note.ok{background:var(--ok-soft);border-color:transparent;color:var(--ok)}
+.reason{font-size:12px;color:var(--ink3);margin-top:6px}
+.sep{height:1px;background:var(--line);margin:14px 0}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:5px 12px;cursor:pointer;font-size:12.5px;display:inline-flex;align-items:center;gap:6px}
+.chip.on{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.chip:disabled{opacity:.45;cursor:not-allowed}
+.btn.chip{border-radius:999px;padding:5px 12px;font-size:12.5px}
+.check{display:flex;flex-direction:column;gap:8px}
+.check button{all:unset;box-sizing:border-box;display:flex;gap:14px;align-items:center;width:100%;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--panel);cursor:pointer}
+.check button:hover{border-color:var(--ink3)}
+.check button.cur{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.check .num{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-size:12px;font-weight:600;flex:none}
+.check .done .num{background:var(--ok);border-color:var(--ok);color:#fff}
+.check .t1{font-weight:600}.check .t2{font-size:12.5px;color:var(--ink3)}
+.here{margin-left:auto;font-size:12px;color:var(--accent);font-weight:600;white-space:nowrap}
+.bars{display:flex;flex-direction:column;gap:8px}
+.bar{display:grid;grid-template-columns:62px minmax(0,1fr) 92px;gap:10px;align-items:center;font-size:12.5px}
+.bar .track{height:12px;background:var(--line2);border-radius:6px;overflow:hidden;display:flex}
+.bar .seg{height:100%}.seg.rec{background:var(--ok)}.seg.due{background:var(--warn)}.seg.out{background:var(--bad)}
+.legend{display:flex;gap:12px;font-size:11.5px;color:var(--ink3);flex-wrap:wrap}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.kv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;font-size:13px}
+.kv .n{font-family:var(--mono);text-align:right}
+.kv .tot{font-weight:600;border-top:1px solid var(--line);padding-top:4px}
+.quote{background:var(--panel2);border:1px solid var(--line);border-radius:4px 14px 14px 14px;padding:10px 14px;margin:10px 0;font-size:14px;max-width:560px}
+.quote small{display:block;color:var(--ink3);font-size:11.5px;margin-top:4px}
+.draft{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--panel2);font-size:13px;white-space:pre-wrap}
+.drafts{display:grid;gap:8px}
+.drafts .opt{all:unset;box-sizing:border-box;display:block;border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;font-size:13px;background:var(--panel2)}
+.drafts .opt:hover{border-color:var(--accent)}
+.drafts .opt b{display:block;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);margin-bottom:3px}
+.dec-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.dec.closed{opacity:.85}
+.feed .r{display:grid;grid-template-columns:62px 62px minmax(0,1fr);gap:10px;padding:7px 0;border-bottom:1px solid var(--line2);font-size:13px}
+.feed .r:last-child{border-bottom:none}
+.who{font-size:11px;font-weight:600}
+.who.AI{color:var(--ai)}.who.You{color:var(--accent)}.who.Payer{color:var(--ok)}.who.System{color:var(--ink3)}
+.progress{height:10px;background:var(--line2);border-radius:5px;overflow:hidden;display:flex;margin:6px 0 14px}
+.progress div{height:100%}
+.install{max-width:560px;margin:40px auto}
+.install .card{padding:28px}
+.tiles-types{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0}
+.tiles-types button{all:unset;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:12px;cursor:pointer;font-size:13px;font-weight:500;display:flex;gap:8px;align-items:center}
+.tiles-types button.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.irow{display:flex;gap:12px;align-items:flex-start;font-size:13px;color:var(--ink2);padding:8px 0}
+.irow svg{margin-top:2px;color:var(--accent)}
+.phone{width:380px;max-width:100%;margin:0 auto;border:10px solid #0a0b10;border-radius:34px;background:var(--panel);overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.12)}
+.phone .in{padding:20px 18px 18px;min-height:560px}
+.phone .fac{font-weight:600;font-size:15px}
+.phone .amt{font-family:var(--mono);font-size:32px;font-weight:600;letter-spacing:-.03em;margin:8px 0 2px}
+.phone .foot{font-size:11.5px;color:var(--ink3);text-align:center;margin-top:16px}
+.banner{border-radius:10px;padding:10px 12px;font-size:12.5px;margin:10px 0}
+.banner.warn{background:var(--warn-soft);color:var(--warn)}
+.banner.info{background:var(--accent-soft);color:var(--accent)}
+.contract{border:1px solid var(--line);border-radius:12px;padding:12px;font-size:12.5px;color:var(--ink2);margin:12px 0;background:var(--panel2)}
+.lines .ln{all:unset;box-sizing:border-box;display:flex;justify-content:space-between;gap:10px;width:100%;padding:9px 0;border-bottom:1px solid var(--line2);cursor:pointer;font-size:13px}
+.lines .ln:hover .nm{color:var(--accent)}
+.lines .ln .n{font-family:var(--mono)}
+.lines .ln small{display:block;color:var(--ink3);font-size:11.5px}
+.overlay{position:fixed;inset:0;background:rgba(8,10,16,.5);z-index:40;display:flex;align-items:flex-end;justify-content:center;padding:16px}
+@media (min-width:700px){.overlay{align-items:center}}
+.sheet{background:var(--panel);border-radius:16px;width:560px;max-width:100%;max-height:88vh;overflow:auto;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.sheet .hd{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.sheet .hd h2{margin:0;font-size:16px}
+.sheet .hd .btn{margin-left:auto}
+.menu{display:flex;flex-direction:column}
+.menu .btn{border:none;border-bottom:1px solid var(--line2);border-radius:0;padding:12px 4px;justify-content:flex-start;width:100%}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:9px 16px;border-radius:10px;font-size:13px;z-index:60;opacity:0;transition:opacity .2s;pointer-events:none;max-width:calc(100% - 32px)}
+.toast.on{opacity:1}
+.fab{position:fixed;right:18px;bottom:18px;z-index:30;background:#0a0b10;color:#fff;border:1px solid #2a2d3a;border-radius:999px;padding:10px 16px;display:flex;gap:8px;align-items:center;cursor:pointer;font-size:13px;font-weight:500;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:380px;max-width:100%;background:var(--panel);border-left:1px solid var(--line);z-index:35;overflow:auto;padding:18px;box-shadow:-10px 0 40px rgba(0,0,0,.15)}
+.drawer .hd{background:#0a0b10;color:#fff;margin:-18px -18px 14px;padding:14px 18px}
+.drawer .hd b{display:block}
+.drawer .hd small{color:#9a9eb0}
+.drawer h3{margin-top:16px}
+.drawer .ev{display:flex;gap:8px;font-size:12.5px;padding:4px 0;color:var(--ink2)}
+.drawer .ev .mono{width:56px;flex:none;color:var(--ink3)}
+.dcol{display:flex;flex-direction:column;gap:6px}
+.dcol .btn{justify-content:flex-start}
+.wa{background:var(--wa-bg);border-radius:14px;padding:14px;color:var(--wa-ink);max-width:440px}
+.wa .b{background:var(--wa-in);border-radius:10px;padding:9px 11px;font-size:13px;margin-bottom:8px;white-space:pre-wrap}
+.wa .b.me{background:var(--wa-out);margin-left:40px}
+.wa .codes{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.wa .codes .btn{background:#1f2c34;border-color:#2a3942;color:var(--wa-ink);justify-content:flex-start}
+.tg{all:unset;box-sizing:border-box;width:34px;height:20px;border-radius:10px;background:var(--line);position:relative;cursor:pointer;flex:none}
+.tg::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.tg.on{background:var(--ok)}.tg.on::after{left:16px}
+.prow{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line2);font-size:13px}
+.prow:last-child{border-bottom:none}
+.prow .grow{flex:1;min-width:0}
+.steps{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.steps .chip b{font-family:var(--mono)}
+.exc{border:1px solid var(--warn);background:var(--warn-soft);border-radius:12px;padding:12px 14px}
+.exc+.exc{margin-top:8px}
+.strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.strip>div{border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:12.5px;display:flex;gap:8px;align-items:flex-start;min-width:0}
+.strip svg{color:var(--ok);margin-top:2px}
+.strip .x svg{color:var(--warn)}
+.hstrip{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:13.5px;flex-wrap:wrap}
+.hstrip b{font-weight:600}
+.pcards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.pcards .card+.card{margin-top:0}
+.pcards>*{min-width:0}
+.big{font-family:var(--mono);font-size:20px;font-weight:600}
+.empty{text-align:center;padding:36px 16px;color:var(--ink3)}
+@media (max-width:1000px){.tiles{grid-template-columns:repeat(3,minmax(0,1fr))}.strip{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:820px){
+  .shell{grid-template-columns:minmax(0,1fr)}
+  .rail{position:sticky;top:0;z-index:20;height:auto;flex-direction:row;align-items:center;overflow-x:auto;padding:8px 10px;gap:6px}
+  .rail .eyebrow,.rail .agent,.rail .status,.rail .grow{display:none}
+  .nav{flex-direction:row;gap:2px}
+  .brand span{display:none}
+  .top{position:static;padding:10px 16px}
+  .top .right .pill.st{display:none}
+  .content{padding:16px 16px 120px}
+  .g2,.g2e,.pcards{grid-template-columns:minmax(0,1fr)}
+  .tiles,.tiles.t3{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .strip{grid-template-columns:minmax(0,1fr)}
+  h1{font-size:27px}
+  .install{margin:8px auto}
+  .install .card{padding:18px}
+  .feed .r{grid-template-columns:48px 50px minmax(0,1fr);gap:6px}
+}
+</style>
+
+<div id="app"></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* ============================================================
+   Shared Collect v8 — Shared Cost Recovery Agent (MVP)
+   Rules compute every rupee. AI reads and proposes. Humans approve.
+   ============================================================ */
+
+/* ---------- constants ---------- */
+const PAY = ['A','B','C','D'], EXT = ['B','C','D'];
+const DUE = '2026-09-30';
+const CYCLE = 'August', PREV = 'July';
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sept','Oct','Nov','Dec'];
+const AUG = [{A:48,B:46,C:38,D:22},{A:14,B:14,C:12,D:6}];
+const JUL = [{A:45,B:44,C:40,D:24},{A:13,B:14,C:12,D:7}];
+const SECOND = {A:50,B:46,C:38,D:22};
+const AMTS = [40000,45000,25000,10000];
+const IFSC = 'RATN0VAAPIS';
+
+/* ---------- formatting ---------- */
+const fmt = n => '₹' + Math.round(n || 0).toLocaleString('en-IN');
+const num = n => Math.round(n || 0).toLocaleString('en-IN');
+const dec = n => (n || 0).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+const pct = (a, b) => b ? Math.floor(a * 100 / b + 1e-9) : 0;
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function dayNum(iso){ const [y,m,d] = String(iso).split('-').map(Number); return Math.round(Date.UTC(y, m - 1, d) / 864e5); }
+function fromDay(n){ return new Date(n * 864e5).toISOString().slice(0, 10); }
+function addDays(iso, n){ return fromDay(dayNum(iso) + n); }
+function fd(iso){ if(!iso) return '—'; const [, m, d] = iso.split('-').map(Number); return d + ' ' + MON[m - 1]; }
+const parseAmt = v => Math.max(0, Math.round(+String(v).replace(/[^\d.]/g, '') || 0));
+
+/* ---------- workspace templates (only names and units change) ---------- */
+const TPL = {
+  clinic: {
+    label:'Clinic / diagnostics', merchant:'Meera Diagnostics', operator:'Meera', staff:'Sunita', second:'machine log', prefix:'MD',
+    payers:[
+      {name:'Dr Meera', role:'Operator · owns the facility', history:'owns the facility'},
+      {name:'Dr Bhatt', role:'Cardiologist', history:'paid on time 3 of 3'},
+      {name:'Dr Arjun', role:'Physician', history:'paid by the 25th in 2 of 3'},
+      {name:'Dr Dhruv', role:'Visiting · Tuesdays', history:'paid late 2 of 3'}],
+    units:['scans','sessions'],
+    lineNames:['Echo machine EMI','Consultation rooms','Technician & front desk (Sunita)','Utilities'],
+    kws:[['echo','machine','emi'],['consultation room','rooms','room','rent'],['technician','front desk','sunita','salary'],['utilit','electric','power']],
+    outNames:['Echo machine EMI','Rent','Sunita’s salary','Utilities'],
+    text:'We share four fixed costs every month. The echo machine EMI of ₹40,000 is split by number of scans. Consultation rooms rent of ₹45,000 is split by sessions. Sunita (technician & front desk) costs ₹25,000, split equally between the four of us. Utilities are ₹10,000: Dhruv pays one-third since he only comes on Tuesdays, and the rest is split equally between the three of us.',
+    ph:'e.g. The echo machine EMI of ₹40,000 is split by scans. Rooms rent ₹45,000 by sessions. Sunita ₹25,000 equally. Utilities ₹10,000 — Dhruv one-third, rest equal.',
+    reply:'Meera ji, is month thoda tight hai. 20 tak kar dunga, pakka.',
+    visit:'Tuesdays'
+  },
+  kitchen: {
+    label:'Cloud kitchen host', merchant:'Kavya’s Kitchen Hub', operator:'Kavya', staff:'Ravi', second:'POS order log', prefix:'KK',
+    payers:[
+      {name:'Kavya', role:'Operator · runs the kitchen', history:'runs the kitchen'},
+      {name:'Tandoor Co.', role:'Brand · all week', history:'paid on time 3 of 3'},
+      {name:'Bowl Theory', role:'Brand · all week', history:'paid by the 25th in 2 of 3'},
+      {name:'Sweet Spot', role:'Brand · weekends', history:'paid late 2 of 3'}],
+    units:['orders','shifts'],
+    lineNames:['Combi oven EMI','Kitchen space','Dishwash & dispatch (Ravi)','Utilities'],
+    kws:[['combi','oven','emi'],['kitchen space','space','rent'],['dishwash','dispatch','ravi','salary'],['utilit','electric','gas','power']],
+    outNames:['Combi oven EMI','Rent','Ravi’s salary','Utilities'],
+    text:'Four shared costs. The combi oven EMI of ₹40,000 is split by orders. Kitchen space rent of ₹45,000 is split by shifts. Ravi (dishwash & dispatch) costs ₹25,000, split equally between the four brands. Utilities are ₹10,000: Sweet Spot pays one-third since it runs only on weekends, and the rest is split equally between the other three.',
+    ph:'e.g. Combi oven EMI ₹40,000 by orders. Kitchen space ₹45,000 by shifts. Ravi ₹25,000 equally. Utilities ₹10,000 — Sweet Spot one-third, rest equal.',
+    reply:'Kavya, this month is tight. 20 tak kar dunga, pakka.',
+    visit:'weekends'
+  },
+  cowork: {
+    label:'Coworking / studio', merchant:'Loft Nine Studios', operator:'Rohan', staff:'Pooja', second:'door access log', prefix:'LN',
+    payers:[
+      {name:'Rohan', role:'Operator · holds the lease', history:'holds the lease'},
+      {name:'Ishita Design', role:'Studio member', history:'paid on time 3 of 3'},
+      {name:'Kabir Films', role:'Studio member', history:'paid by the 25th in 2 of 3'},
+      {name:'Nisha Photo', role:'Weekends only', history:'paid late 2 of 3'}],
+    units:['desk-days','room-hours'],
+    lineNames:['Lighting rig EMI','Studio space','Studio manager (Pooja)','Utilities'],
+    kws:[['lighting','rig','emi'],['studio space','space','rent'],['manager','pooja','salary'],['utilit','electric','internet','power']],
+    outNames:['Lighting rig EMI','Rent','Pooja’s salary','Utilities'],
+    text:'We share four costs. The lighting rig EMI of ₹40,000 is split by desk-days. Studio space rent of ₹45,000 is split by room-hours. Pooja (studio manager) costs ₹25,000, split equally between the four of us. Utilities are ₹10,000: Nisha pays one-third since she only uses weekends, and the rest is split equally between the three of us.',
+    ph:'e.g. Lighting rig EMI ₹40,000 by desk-days. Studio space ₹45,000 by room-hours. Pooja ₹25,000 equally. Utilities ₹10,000 — Nisha one-third, rest equal.',
+    reply:'Rohan, this month is tight. 20 tak kar dunga, pakka.',
+    visit:'weekends'
+  },
+  other: {
+    label:'Other shared facility', merchant:'Shared facility', operator:'Owner', staff:'front desk', second:'second log', prefix:'SF',
+    payers:[
+      {name:'Owner', role:'Operator · owns the facility', history:'owns the facility'},
+      {name:'Stakeholder B', role:'Stakeholder', history:'no history yet'},
+      {name:'Stakeholder C', role:'Stakeholder', history:'no history yet'},
+      {name:'Stakeholder D', role:'Stakeholder', history:'no history yet'}],
+    units:['uses','hours'],
+    lineNames:['Equipment EMI','Space rent','Staff','Utilities'],
+    kws:[['equipment','machine','emi','loan'],['space','rent','room'],['staff','salary','wages'],['utilit','electric','power','internet']],
+    outNames:['Equipment EMI','Rent','Staff salary','Utilities'],
+    text:'',
+    ph:'Describe how you split costs today, e.g. “Equipment EMI ₹40,000 split by uses. Rent ₹45,000 by hours. Staff ₹25,000 equally. Utilities ₹10,000 — D pays one-third, the rest equal.”',
+    reply:'This month is tight. 20 tak kar dunga, pakka.',
+    visit:'some days'
+  }
+};
+const DATES = ['2026-10-05','2026-10-05','2026-10-07','2026-10-20'];
+
+/* ---------- rules engine (real code) ---------- */
+// Allocate an integer amount by weights, largest remainder; ties go to the lowest running total.
+function allocate(amount, weights, running){
+  running = running || {};
+  const ids = Object.keys(weights).filter(i => weights[i] > 0);
+  const out = {}, exact = {};
+  Object.keys(weights).forEach(i => { out[i] = 0; exact[i] = 0; });
+  const W = ids.reduce((s, i) => s + weights[i], 0);
+  if(!W || !amount) return {out, exact};
+  let used = 0;
+  ids.forEach(i => { exact[i] = amount * weights[i] / W; out[i] = Math.floor(exact[i] + 1e-9); used += out[i]; });
+  const order = ids.slice().sort((a, b) => {
+    const fa = exact[a] - out[a], fb = exact[b] - out[b];
+    if(Math.abs(fa - fb) > 1e-9) return fb - fa;
+    return ((running[a] || 0) + out[a]) - ((running[b] || 0) + out[b]) || a.localeCompare(b);
+  });
+  for(let k = 0; k < amount - used; k++) out[order[k % order.length]]++;
+  return {out, exact};
+}
+// Per line, allocate to the rupee so each line sums exactly.
+function computeShares(lines, counts){
+  const total = {A:0,B:0,C:0,D:0}, byLine = {};
+  lines.forEach(L => {
+    const amt = Math.round(L.amount || 0);
+    let res, w = {};
+    if(L.mode === 'count'){
+      const c = (counts && counts[L.unit]) || {};
+      PAY.forEach(i => w[i] = +c[i] || 0);
+      res = allocate(amt, w, total);
+    } else if(L.mode === 'third'){
+      const d = Math.floor(amt / 3);
+      w = {A:1,B:1,C:1};
+      const r = allocate(amt - d, w, total);
+      res = {out:{...r.out, D:d}, exact:{...r.exact, D:amt / 3}};
+    } else {
+      PAY.forEach(i => w[i] = 1);
+      res = allocate(amt, w, total);
+    }
+    byLine[L.key] = {out:res.out, exact:res.exact, w, W:Object.values(w).reduce((s, x) => s + x, 0)};
+    PAY.forEach(i => total[i] += res.out[i] || 0);
+  });
+  return {total, byLine};
+}
+// Keyword parser standing in for the rule-drafting model (same contract: text -> {lines, confidence, hits}).
+function parseRule(text, baseLines, units){
+  const t = String(text || '').toLowerCase();
+  const sentences = t.split(/(?<=[.!?\n])\s+/).filter(Boolean);
+  let hits = 0;
+  const lines = baseLines.map(L => {
+    const s = sentences.find(x => L.kw.some(k => x.includes(k)));
+    if(!s) return {...L, amount:0, mode:'equal', unit:null, found:false};
+    const m = s.match(/(?:₹|rs\.?|inr)\s*([\d,]+)/i) || s.match(/\b(\d{1,3}(?:,\d{2,3})+|\d{4,})\b/);
+    const amount = m ? +m[1].replace(/,/g, '') : 0;
+    let mode = 'equal', unit = null;
+    const u = units.find(u => s.includes(u) || s.includes(u.replace(/s$/, '')));
+    if(/third|⅓|1\/3/.test(s)) mode = 'third';
+    else if(u && /\bby\b|per |according|usage|number/.test(s)){ mode = 'count'; unit = u; }
+    if(amount) hits++;
+    return {...L, amount, mode, unit, found:!!amount};
+  });
+  const confidence = hits ? Math.min(0.94, 0.58 + 0.09 * hits) : 0.2;
+  return {lines, confidence, hits};
+}
+// Reply-intent classifier standing in for the intent model (same contract: text -> {intent, why}).
+function classify(text){
+  const t = String(text || '').toLowerCase();
+  if(/tight|time|tak kar|\btak\b|later|next week|thoda|after|salary aaye|by the \d+/.test(t))
+    return {intent:'request-time', why:'Asks for more time and names a date (“20 tak”), with a commitment (“pakka”).'};
+  if(/wrong|galat|not mine|didn.t use|dispute/.test(t)) return {intent:'dispute', why:'Says a number is wrong.'};
+  if(/\?|why|how|kyun|kaise/.test(t)) return {intent:'question', why:'Asks how something was computed.'};
+  if(/paid|kar diya|done|sent/.test(t)) return {intent:'paid-claim', why:'Says the payment was made.'};
+  return {intent:'other', why:'No clear intent.'};
+}
+// Pure cash calendar: what is needed by a date vs what is expected by it.
+function cashGap(outflows, inflows, by){
+  const b = dayNum(by);
+  const need = outflows.filter(o => dayNum(o.date) <= b).reduce((s, o) => s + o.amt, 0);
+  const inflow = inflows.filter(x => dayNum(x.d) <= b).reduce((s, x) => s + x.amt, 0);
+  return {need, inflow, gap:Math.max(0, need - inflow)};
+}
+
+/* ---------- state ---------- */
+let S;
+function tplLines(T){
+  return T.lineNames.map((name, i) => ({key:['equip','space','staff','util'][i], name, amount:0, mode:'equal', unit:null, kw:T.kws[i]}));
+}
+function fresh(type, onboarded){
+  const T = TPL[type];
+  const counts = {}, prev = {};
+  T.units.forEach((u, i) => { counts[u] = {...AUG[i]}; prev[u] = {...JUL[i]}; });
+  S = {
+    onboarded, tpl:type, merchant:T.merchant, operator:T.operator,
+    payers:T.payers.map((p, i) => ({id:PAY[i], name:p.name, role:p.role, history:p.history, phone:''})),
+    page:onboarded ? 'setup' : 'start', setupStep:'rule', today:'2026-08-28',
+    mode:'review', cap:72, tone:null,
+    text:T.text, rule:null, manual:false, lines:tplLines(T),
+    counts, prevCounts:prev, countsOwner:'frontdesk', countsReceived:false,
+    secondSource:{unit:T.units[0], label:T.second, vals:{...SECOND}},
+    baseline:[{month:'May',collectedByDue:'',total:''},{month:'Jun',collectedByDue:'',total:''},{month:'Jul',collectedByDue:'',total:''}], baselineSkipped:false,
+    outflows:T.outNames.map((name, i) => ({name, amt:AMTS[i], date:DATES[i]})),
+    sources:{invoices:true, whatsapp:true}, perms:{flag:true, draft:true, plan:true},
+    ruleVersion:1, sentRule:false, consent:{A:true,B:null,C:null,D:null}, declineReason:{}, active:false,
+    billed:false, provisional:false, billedOn:null, billedShares:null, billedCounts:null, invoices:{},
+    paid:{A:0,B:0,C:0,D:0}, paidDates:{A:[],B:[],C:[],D:[]},
+    inbox:[], sent:[], planC:null, planAccepted:false, plans:{}, closed:false,
+    log:[], drawer:false, viewPayer:'C', replies:false,
+    exc:{}, done:{}, trueUp:null, sheet:null, expectD:true, editing:{}, dismissing:null, declining:null,
+    logFilter:'all', grid:false, countsDraft:null, csvOpen:false, csvMsg:null, open:{}, neft:false,
+    ui:{type, merchant:'', name:''}, seq:1
+  };
+  return S;
+}
+
+/* ---------- derived ---------- */
+const T = () => TPL[S.tpl];
+const P = id => S.payers.find(p => p.id === id);
+const nm = id => P(id).name;
+const first = id => nm(id).replace(/^Dr\.?\s+/, '').split(' ')[0];
+const pool = () => S.lines.reduce((s, l) => s + (l.amount || 0), 0);
+const ruleReady = () => (!!S.rule || S.manual) && pool() > 0;
+const ownerName = () => S.countsOwner === 'operator' ? 'you' : T().staff;
+const handled = id => S.active && S.consent[id] === true;
+const nHandled = () => S.active ? EXT.filter(i => S.consent[i] === true).length : 0;
+const openItems = () => S.inbox.filter(i => i.status === 'open');
+function effCounts(){
+  const c = JSON.parse(JSON.stringify(S.counts));
+  const ss = S.secondSource;
+  if(ss && c[ss.unit]) PAY.forEach(id => { if(S.exc[ss.unit + ':' + id] === 'second') c[ss.unit][id] = ss.vals[id]; });
+  return c;
+}
+const basisCounts = () => S.billed ? S.billedCounts : (S.countsReceived ? effCounts() : S.prevCounts);
+const shares = () => S.billed ? S.billedShares : computeShares(S.lines, basisCounts()).total;
+const remaining = id => Math.max(0, shares()[id] - S.paid[id]);
+function exceptions(){
+  const ss = S.secondSource;
+  if(!ss || !S.countsReceived || !S.counts[ss.unit]) return [];
+  return PAY.filter(id => +S.counts[ss.unit][id] !== +ss.vals[id]).map(id => {
+    const key = ss.unit + ':' + id;
+    const reg = computeShares(S.lines, S.counts).total;
+    const alt = JSON.parse(JSON.stringify(S.counts)); alt[ss.unit][id] = ss.vals[id];
+    const sec = computeShares(S.lines, alt).total;
+    return {key, id, unit:ss.unit, reg:+S.counts[ss.unit][id], sec:+ss.vals[id], impact:Math.abs(sec[id] - reg[id]), res:S.exc[key] || null};
+  });
+}
+const openExc = () => exceptions().filter(e => !e.res);
+function log(who, what){ S.log.unshift({t:S.today, who, what}); }
+function syncActive(){
+  const n = EXT.filter(i => S.consent[i] === true).length;
+  const was = S.active;
+  S.active = S.sentRule && n >= 1 || (S.billed && was);
+  if(S.active && !was) log('AI', `Agent activated — ${1 + n} of 4 have accepted rule v${S.ruleVersion}. Review-first: nothing is sent without you.`);
+}
+function pay(id, amt, who, note){
+  amt = Math.min(amt, remaining(id));
+  if(amt <= 0) return;
+  S.paid[id] += amt;
+  S.paidDates[id].push({d:S.today, amt});
+  log(who || 'Payer', `${nm(id)} paid ${fmt(amt)}${note ? ' · ' + note : ''}${remaining(id) === 0 ? ' — paid in full' : ' — ' + fmt(remaining(id)) + ' left'}`);
+}
+// expected remaining inflows per payer as [{d, amt}]
+function sched(id, opt){
+  opt = opt || {};
+  const rem = remaining(id);
+  if(rem <= 0) return [];
+  if(id === 'A') return [{d:S.billedOn || S.today, amt:rem}];
+  if(id === 'C' && S.planC && S.planC.sent && !opt.noPlan){
+    let paid = S.paid.C; const out = [];
+    [[S.planC.d1, S.planC.inst1], [S.planC.d2, S.planC.inst2]].forEach(([d, a]) => { const take = Math.min(a, paid); paid -= take; if(a - take > 0) out.push({d, amt:a - take}); });
+    return out;
+  }
+  if(S.plans[id] && S.plans[id].accepted) return [{d:S.plans[id].date, amt:rem}];
+  if(id === 'D' && !S.expectD) return [{d:'2026-10-20', amt:rem}];
+  const said = S.inbox.find(i => i.kind === 'reply' && i.from === id);
+  if(said) return [{d:said.said, amt:rem}];
+  return [{d:DUE, amt:rem}];
+}
+function inflows(opt){
+  const xs = [];
+  PAY.forEach(id => { S.paidDates[id].forEach(p => xs.push({d:p.d, amt:p.amt, id})); sched(id, opt).forEach(x => xs.push({...x, id})); });
+  return xs;
+}
+function keyDate(opt){
+  const dates = [...new Set(S.outflows.map(o => o.date))].sort();
+  let best = dates[0] || DUE, worst = -Infinity;
+  const inf = inflows(opt);
+  dates.forEach(d => { const g = cashGap(S.outflows, inf, d); const v = g.need - g.inflow; if(v > worst + 0.5){ worst = v; best = d; } });
+  return best;
+}
+const cashAt = (d, opt) => cashGap(S.outflows, inflows(opt), d);
+
+/* ---------- money display (provisional-aware) ---------- */
+const M = n => S.billed && S.provisional ? `<span class="prov" title="Provisional — based on ${PREV} usage">${fmt(n)}</span>` : fmt(n);
+const provPill = () => S.billed && S.provisional ? ' <span class="pill warn">provisional</span>' : '';
+
+/* ---------- icons ---------- */
+const IC = {
+  home:'M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z',
+  settings:'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z',
+  users:'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M23 21v-2a4 4 0 0 0-3-3.9 M16 3.1a4 4 0 0 1 0 7.8',
+  doc:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8',
+  inbox:'M22 12h-6l-2 3h-4l-2-3H2 M5.5 5.1L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1z',
+  list:'M8 6h13 M8 12h13 M8 18h13 M3 6h.01 M3 12h.01 M3 18h.01',
+  spark:'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z M19 16l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z',
+  info:'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M12 16v-4 M12 8h.01',
+  play:'M6 4l14 8-14 8z',
+  upload:'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M17 8l-5-5-5 5 M12 3v12',
+  check:'M20 6L9 17l-5-5',
+  edit:'M12 20h9 M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z',
+  x:'M18 6L6 18 M6 6l12 12',
+  wa:'M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z',
+  eye:'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
+  copy:'M20 9h-9a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2z M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1',
+  send:'M22 2L11 13 M22 2l-7 20-4-9-9-4z',
+  pay:'M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z M2 10h20',
+  clock:'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M12 6v6l4 2',
+  flag:'M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z M4 22v-7',
+  lock:'M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2z M7 11V7a5 5 0 0 1 10 0v4',
+  arrow:'M5 12h14 M12 5l7 7-7 7',
+  reset:'M1 4v6h6 M3.5 15a9 9 0 1 0 2.1-9.4L1 10',
+  chart:'M18 20V10 M12 20V4 M6 20v-6'
+};
+const ic = k => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="${IC[k]}"/></svg>`;
+
+/* ---------- small builders ---------- */
+function attrs(o){ return Object.entries(o || {}).filter(([, v]) => v !== undefined && v !== null).map(([k, v]) => ` data-${k}="${esc(v)}"`).join(''); }
+function b(label, action, o){
+  o = o || {};
+  return `<button type="button" class="btn ${o.cls || ''}" data-action="${action}"${attrs({arg:o.arg, ...(o.d || {})})}${o.dis ? ' disabled' : ''}${o.title ? ` title="${esc(o.title)}"` : ''}>${o.icon ? ic(o.icon) : ''}<span>${label}</span></button>`;
+}
+const pill = (t, c) => `<span class="pill ${c || ''}">${t}</span>`;
+const AIp = (t) => pill(t || 'AI', 'ai');
+const RULESp = () => pill('rules', 'rules');
+
+/* ============================================================
+   VIEWS
+   ============================================================ */
+const NAV = [
+  ['overview','Overview','home'],['setup','Setup','settings'],['stakeholders','Stakeholders','users'],
+  ['usage','Usage & billing','doc'],['decisions','Decisions','inbox'],['activity','Activity','list'],['report','Month report','chart']
+];
+function statusText(){ return !S.onboarded ? ['Not installed',''] : S.active ? ['Active · review-first','on'] : ['Not active · setup','mid']; }
+
+function shell(){
+  const [st, cls] = statusText();
+  const n = openItems().length;
+  return `<div class="shell">
+  <aside class="rail">
+    <div class="brand"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 2h12L13 22H7l3.6-8.5H5z" fill="#3395ff"/></svg><span>Razorpay</span></div>
+    <div class="eyebrow">Agent Studio</div>
+    <div class="agent">Shared Cost Recovery Agent</div>
+    <div class="status"><span class="dot ${cls}"></span>${st}</div>
+    <nav class="nav">
+      ${NAV.map(([k, l, i]) => `<button type="button" class="${S.page === k || (k === 'stakeholders' && S.page === 'payer') ? 'on' : ''}" data-action="nav" data-arg="${k}"${S.onboarded ? '' : ' disabled'}>${ic(i)}<span>${l}</span>${k === 'decisions' && n ? `<span class="badge">${n}</span>` : ''}</button>`).join('')}
+    </nav>
+    <div class="grow"></div>
+    <nav class="nav"><button type="button" data-action="openAbout">${ic('info')}<span>About this build</span></button></nav>
+  </aside>
+  <main class="main">
+    <div class="top">
+      <div class="crumb">Agent Studio · My agents · Shared Cost Recovery Agent · <b>${esc(S.onboarded ? S.merchant : 'New workspace')}</b></div>
+      <div class="right"><span class="pill st ${cls === 'on' ? 'ok' : cls === 'mid' ? 'warn' : ''}">${st}</span><span class="pill mono">${fd(S.today)}</span></div>
+    </div>
+    <div class="content">${page()}</div>
+  </main>
+</div>
+${S.sheet ? sheet(S.sheet.kind, S.sheet.payload || {}) : ''}
+${S.drawer ? drawer() : ''}
+<button type="button" class="fab" data-action="toggleDrawer">${ic('play')}<span>Scenario</span></button>`;
+}
+function page(){
+  if(!S.onboarded) return pStart();
+  switch(S.page){
+    case 'overview': return pOverview();
+    case 'setup': return pSetup();
+    case 'stakeholders': return pStakeholders();
+    case 'usage': return pUsage();
+    case 'decisions': return pDecisions();
+    case 'payer': return pPayer();
+    case 'activity': return pActivity();
+    case 'report': return pReport();
+    default: return pOverview();
+  }
+}
+const handlesStrip = () => `<div class="hstrip">${ic('users')}<span><b>Agent handles ${nHandled()} of 3</b> <span class="mute">· all 3 invoiced</span></span>${S.active ? '' : ` <span class="mute small">· activates at the first acceptance</span>`}</div>`;
+
+/* ---------- P0 Install ---------- */
+function pStart(){
+  const t = TPL[S.ui.type];
+  return `<div class="install"><div class="card">
+    <h1>Shared Cost Recovery Agent</h1>
+    <p class="lede" style="margin-bottom:8px">Split one shared cost by a rule everyone accepts, bill each person in your name, and get the agent’s read when a share runs late.</p>
+    <label class="f" style="margin-top:14px">What do you share?</label>
+    <div class="tiles-types">${Object.keys(TPL).map(k => `<button type="button" class="${S.ui.type === k ? 'on' : ''}" data-action="pickType" data-arg="${k}">${TPL[k].label}</button>`).join('')}</div>
+    <div class="g2e">
+      <div><label class="f" for="in-m">Business name</label><input id="in-m" type="text" placeholder="${esc(t.merchant)}" value="${esc(S.ui.merchant)}" data-live="instMerchant"></div>
+      <div><label class="f" for="in-n">Your name</label><input id="in-n" type="text" placeholder="${esc(t.operator)}" value="${esc(S.ui.name)}" data-live="instName"></div>
+    </div>
+    <div style="margin-top:16px">${b('Continue', 'install', {cls:'primary big wide', icon:'arrow'})}</div>
+    <div class="sep"></div>
+    <div class="irow">${ic('doc')}<div>Turns how you split costs today into a rule, and shows each person the math before any bill.</div></div>
+    <div class="irow">${ic('pay')}<div>Bills each person in your name through Razorpay Invoices, with one Smart Collect account each.</div></div>
+    <div class="irow">${ic('spark')}<div>When a share runs late, proposes what to do against your cash calendar. You approve everything it sends.</div></div>
+  </div></div>`;
+}
+
+/* ---------- P1 Overview ---------- */
+function pOverview(){
+  if(!(S.active || S.billed)){
+    const steps = [
+      ['Describe the rule','Paste how you split costs today. The agent drafts a rule you check line by line.', ruleReady()],
+      ['Invite stakeholders',`Send rule v${S.ruleVersion} on WhatsApp. Each stakeholder sees their own page and the math.`, S.sentRule],
+      ['Stakeholders accept','The agent activates itself at the first acceptance.', S.active],
+      ['First billing run',`Bill ${CYCLE} usage through Razorpay Invoices and Smart Collect.`, S.billed]];
+    const cur = steps.findIndex(s => !s[2]);
+    return `<h1>${esc(S.merchant)}</h1><p class="lede">Four steps to a running agent. Each opens the page where it happens.</p>
+    <div class="check">${steps.map((s, i) => `<button type="button" class="${s[2] ? 'done' : ''} ${i === cur ? 'cur' : ''}" data-action="goStep" data-arg="${i}">
+      <span class="num">${s[2] ? ic('check') : i + 1}</span><span><span class="t1">${s[0]}</span><br><span class="t2">${s[1]}</span></span>
+      ${i === cur ? `<span class="here">You are here · continue →</span>` : ''}</button>`).join('')}</div>
+    ${recent(6)}`;
+  }
+  const sh = shares(), p = pool(), m = metrics();
+  const n = openItems().length;
+  return `<h1>${esc(S.merchant)}</h1><p class="lede">${CYCLE} usage · due ${fd(DUE)} (never moved by a plan).</p>
+  ${handlesStrip()}
+  <div class="tiles">
+    <div class="tile"><div class="k">Pool</div><div class="v">${fmt(p)}</div><div class="s">${S.lines.length} cost lines</div></div>
+    <div class="tile"><div class="k">Collected</div><div class="v">${pct(m.coll, p)}%</div><div class="s">${fmt(m.coll)}</div></div>
+    <div class="tile"><div class="k">Covered by original due</div><div class="v">${pct(m.byDue, p)}%</div><div class="s">incl. your own share</div></div>
+    <div class="tile"><div class="k">External by due</div><div class="v">${pct(m.extByDue, m.extTotal)}%</div><div class="s">${fmt(m.extByDue)} of ${fmt(m.extTotal)}</div></div>
+    <div class="tile"><div class="k">Decisions</div><div class="v">${n}</div><div class="s">${n ? 'waiting for you' : 'nothing waiting'}</div></div>
+  </div>
+  ${n ? `<div class="card" style="border-color:var(--ai)"><div class="row sb"><div><h2 style="margin:0">${n} decision${n > 1 ? 's' : ''} waiting</h2><div class="small mute">${openItems().map(i => `${esc(nm(i.from))} · ${kindLabel(i)}`).join(' · ')}</div></div>${b('Open decisions', 'nav', {arg:'decisions', cls:'primary', icon:'inbox'})}</div></div>` : ''}
+  ${!S.billed ? `<div class="card"><div class="row sb"><div><h2 style="margin:0">Billing run · ${CYCLE} usage</h2><div class="small mute">${billingStatus()[0]}</div></div>${b('Open billing run', 'nav', {arg:'usage', cls:'primary', icon:'doc'})}</div></div>` : ''}
+  <div class="card"><h2>Stakeholders${provPill()}</h2><div class="wrap"><table class="t">
+    <thead><tr><th>Payer</th><th class="n">Share</th><th class="n">Paid</th><th>State</th><th>Last contact</th><th>Next</th></tr></thead>
+    <tbody>${PAY.map(id => { const last = S.sent.filter(s => s.to === id).slice(-1)[0];
+      return `<tr><td>${b(esc(nm(id)), 'openPage', {arg:id, cls:'link'})}${id === 'A' ? ' <span class="mute small">you</span>' : ''}</td><td class="n">${M(sh[id])}</td><td class="n">${fmt(S.paid[id])}</td><td>${stateCell(id)}</td><td class="small">${last ? fd(last.t) : '—'}</td><td class="small">${nextFor(id)}</td></tr>`; }).join('')}</tbody>
+  </table></div></div>
+  <div class="g2e" style="margin-top:14px">${cashCard()}${perfCard()}</div>
+  ${recent(6)}`;
+}
+function stateCell(id){
+  const r = remaining(id), sh = shares()[id];
+  if(id === 'A') return S.billed ? pill('booked', 'ok') : pill('own share');
+  if(!S.billed) return pill('not billed');
+  if(r === 0) return pill('paid', 'ok');
+  const plan = (id === 'C' && S.planC && S.planC.sent) || (S.plans[id] && S.plans[id].accepted);
+  if(S.paid[id] > 0) return pill(plan ? 'plan · part-paid' : 'part-paid', 'acc');
+  if(plan) return pill('plan', 'acc');
+  if(!handled(id)) return pill('ledger only');
+  return dayNum(S.today) > dayNum(DUE) ? pill('late', 'bad') : pill('open', 'warn');
+}
+function nextFor(id){
+  if(id === 'A') return '—';
+  if(!S.billed) return 'Invoice after counts';
+  if(remaining(id) === 0) return '—';
+  const s = sched(id)[0];
+  if(!handled(id)) return `Invoice only · expected ${fd(s.d)}`;
+  if(id === 'C' && S.planC && S.planC.sent) return `Plan: ${fmt(s.amt)} by ${fd(s.d)}`;
+  if(S.plans[id] && S.plans[id].accepted) return `Agreed: by ${fd(s.d)}`;
+  return `Watching · due ${fd(DUE)}`;
+}
+function cashCard(){
+  const kd = keyDate(), g = cashAt(kd), inf = inflows(), sh = shares();
+  const dates = [...new Set([DUE, ...S.outflows.map(o => o.date)])].sort((a, b) => dayNum(a) - dayNum(b));
+  const max = Math.max(pool(), 1);
+  const rows = dates.map(d => {
+    const rec = PAY.reduce((s, id) => s + S.paidDates[id].filter(p => dayNum(p.d) <= dayNum(d)).reduce((a, p) => a + p.amt, 0), 0);
+    const recAll = rec;
+    const dueBy = PAY.reduce((s, id) => s + sched(id).filter(x => dayNum(x.d) <= dayNum(d)).reduce((a, x) => a + x.amt, 0), 0);
+    const out = S.outflows.filter(o => o.date === d).reduce((s, o) => s + o.amt, 0);
+    return `<div class="bar"><span class="mono">${fd(d)}</span><div class="track"><div class="seg rec" style="width:${recAll / max * 100}%"></div><div class="seg due" style="width:${dueBy / max * 100}%"></div></div><span class="small mute">${out ? `<span style="color:var(--bad)">−${fmt(out)}</span>` : d === DUE ? 'due date' : ''}</span></div>
+    ${out ? `<div class="bar"><span></span><div class="track"><div class="seg out" style="width:${out / max * 100}%"></div></div><span class="tiny mute">${esc(S.outflows.filter(o => o.date === d).map(o => o.name).join(', '))}</span></div>` : ''}`;
+  }).join('');
+  return `<div class="card"><div class="row sb"><h2 style="margin:0">Cash calendar ${RULESp()}</h2><div class="legend"><span><i style="background:var(--ok)"></i>received</span><span><i style="background:var(--warn)"></i>still due</span><span><i style="background:var(--bad)"></i>outflows</span></div></div>
+  <div class="bars" style="margin-top:12px">${rows}</div>
+  <div class="sep"></div>
+  <div class="kv"><span>Needed by ${fd(kd)}</span><span class="n">${fmt(g.need)}</span><span>Expected by then</span><span class="n">${fmt(g.inflow)}</span><span class="tot">Gap</span><span class="n tot" style="color:${g.gap ? 'var(--bad)' : 'var(--ok)'}">${fmt(g.gap)}</span></div>
+  <p class="tiny mute" style="margin-top:8px">Expected = cash in hand + shares on track or planned before ${fd(kd)}.</p></div>`;
+}
+function perfCard(){
+  const decided = S.inbox.filter(i => i.status !== 'open');
+  const asIs = decided.filter(i => i.status === 'approved').length;
+  const sentByAgent = S.sent.filter(s => !s.auto && s.via === 'agent').length;
+  const m = metrics();
+  return `<div class="card"><h2>Agent this cycle</h2><div class="kv">
+    <span>Proposals made</span><span class="n">${S.inbox.length}</span>
+    <span>Decided by you</span><span class="n">${decided.length}</span>
+    <span>Approved as drafted</span><span class="n">${asIs}</span>
+    <span>Messages sent for you</span><span class="n">${sentByAgent}</span>
+    <span>Brought before due by plans</span><span class="n">${fmt(m.agentBrought)}</span>
+  </div><p class="tiny mute" style="margin-top:8px">Mode: review-first. The agent never changes a share, waives, cuts access or finances a gap.</p></div>`;
+}
+function recent(n){
+  return `<div class="card"><div class="row sb"><h2 style="margin:0">Recent activity</h2>${b('All activity', 'nav', {arg:'activity', cls:'ghost sm', icon:'list'})}</div>
+  <div class="feed" style="margin-top:8px">${S.log.slice(0, n).map(feedRow).join('') || `<div class="mute small">Nothing yet.</div>`}</div></div>`;
+}
+const feedRow = l => `<div class="r"><span class="mono tiny mute">${fd(l.t)}</span><span class="who ${l.who}">${l.who}</span><span class="w">${esc(l.what)}</span></div>`;
+
+/* ---------- P2 Setup ---------- */
+function pSetup(){
+  const step = S.setupStep;
+  return `<h1>Setup</h1><p class="lede">${step === 'rule' ? 'Describe the rule, check the math, then invite stakeholders.' : 'Send the rule. Each stakeholder accepts on their own page.'}</p>
+  <div class="steps">${b('<b>2a</b>&nbsp;Rule', 'setupStep', {arg:'rule', cls:'chip ' + (step === 'rule' ? 'on' : '')})}${b('<b>2b</b>&nbsp;Invite', 'setupStep', {arg:'invite', cls:'chip ' + (step === 'invite' ? 'on' : ''), dis:!ruleReady()})}</div>
+  ${step === 'rule' ? setupRule() : setupInvite()}`;
+}
+function splitOptions(L, locked){
+  const opts = Object.keys(S.counts).map(u => [`count:${u}`, `by ${u}`]).concat([['equal', 'equal ×4'], ['third', `fixed fraction · ${esc(first('D'))} ⅓, rest equal`]]);
+  const cur = L.mode === 'count' ? `count:${L.unit}` : L.mode;
+  return `<select data-action="setLineSplit" data-key="${L.key}" aria-label="Split for ${esc(L.name)}"${locked ? ' disabled' : ''}>${!S.rule && !S.manual && !L.amount ? '<option value="">choose…</option>' : ''}${opts.map(([v, l]) => `<option value="${v}"${v === cur && (S.rule || S.manual || L.amount) ? ' selected' : ''}>${l}</option>`).join('')}</select>`;
+}
+function evidence(L){
+  if(L.mode === 'count') return S.secondSource && S.secondSource.unit === L.unit ? `register + ${esc(S.secondSource.label)}` : 'register';
+  if(L.mode === 'third') return 'fraction in the rule';
+  return 'none needed';
+}
+function setupRule(){
+  const locked = S.billed, namesLocked = S.sentRule || S.billed;
+  const r = S.rule;
+  const ex = computeShares(S.lines, S.prevCounts);
+  return `<div class="g2">
+  <div class="stack">
+    <div class="card"><h2>Names</h2>
+      <div class="g2e"><div><label class="f">Business</label><input type="text" value="${esc(S.merchant)}" data-action="setMerchant"${namesLocked ? ' disabled' : ''}></div>
+      <div><label class="f">You (${esc(PAY[0])})</label><input type="text" value="${esc(nm('A'))}" data-action="setPayerName" data-id="A"${namesLocked ? ' disabled' : ''}></div>
+      ${EXT.map(id => `<div><label class="f">Stakeholder ${id}</label><input type="text" value="${esc(nm(id))}" data-action="setPayerName" data-id="${id}"${namesLocked ? ' disabled' : ''}></div>`).join('')}</div>
+      ${namesLocked ? `<p class="tiny mute" style="margin-top:8px">${ic('lock')} Names are locked once the rule is sent.</p>` : ''}
+    </div>
+    <div class="card"><h2>Your arrangement, in your words</h2>
+      <textarea data-live="setText" placeholder="${esc(T().ph)}" aria-label="Arrangement"${locked ? ' disabled' : ''}>${esc(S.text)}</textarea>
+      <div class="row" style="margin-top:10px">${b('Draft the rule', 'draftRule', {cls:'primary', icon:'spark', dis:locked})}
+      ${r ? `${AIp('AI draft')} <span class="small">confidence ${Math.round(r.confidence * 100)}% · ${r.hits} of 4 lines recognised</span>` : S.manual ? `<span class="small mute">Entered by hand</span>` : `<span class="small mute">Or set amounts and splits by hand below.</span>`}</div>
+    </div>
+    <div class="card"><h2>The rule · v${S.ruleVersion}${S.sentRule ? ' ' + pill('sent', 'ok') : ''}</h2>
+      <div class="wrap"><table class="t"><thead><tr><th>Line</th><th>Amount</th><th>Split by</th><th>Evidence</th></tr></thead><tbody>
+      ${S.lines.map(L => `<tr><td style="min-width:150px">${esc(L.name)}${r && L.found === false ? `<div class="tiny" style="color:var(--warn)">not found in your text — set by hand</div>` : ''}</td>
+        <td><div class="money"><span>₹</span><input type="text" inputmode="numeric" value="${L.amount ? num(L.amount) : ''}" placeholder="0" data-action="setLineAmount" data-key="${L.key}" aria-label="Amount for ${esc(L.name)}"${locked ? ' disabled' : ''}></div></td>
+        <td style="min-width:170px">${splitOptions(L, locked)}</td><td class="small mute">${evidence(L)}</td></tr>`).join('')}
+      </tbody><tfoot><tr><td>Pool</td><td class="n" style="text-align:left">${fmt(pool())}</td><td colspan="2"></td></tr></tfoot></table></div>
+      ${locked ? `<p class="tiny mute" style="margin-top:8px">${ic('lock')} Invoices are issued on rule v${S.ruleVersion}. Changes apply from the next cycle.</p>` : S.sentRule ? `<p class="tiny mute" style="margin-top:8px">Editing a line now creates rule v${S.ruleVersion + 1} and asks everyone to accept again.</p>` : ''}
+    </div>
+  </div>
+  <div class="stack">
+    <div class="card"><h2>Fairness proof ${RULESp()}</h2>
+      ${pool() ? `<p class="small mute">What each would have paid last month (${PREV} usage)</p><div class="wrap"><table class="t"><thead><tr><th>Payer</th>${S.lines.map(L => `<th class="n">${esc(L.name.split(' (')[0])}</th>`).join('')}<th class="n">Total</th></tr></thead>
+      <tbody>${PAY.map(id => `<tr><td>${esc(nm(id))}</td>${S.lines.map(L => `<td class="n">${num(ex.byLine[L.key].out[id])}</td>`).join('')}<td class="n"><b>${fmt(ex.total[id])}</b></td></tr>`).join('')}</tbody>
+      <tfoot><tr><td>Sum</td>${S.lines.map(L => `<td class="n">${num(PAY.reduce((s, i) => s + ex.byLine[L.key].out[i], 0))}</td>`).join('')}<td class="n">${fmt(PAY.reduce((s, i) => s + ex.total[i], 0))}</td></tr></tfoot></table></div>
+      <p class="small" style="margin-top:8px"><b>This is what each stakeholder sees before any bill.</b></p>` : `<div class="note">Draft the rule or enter amounts to see the worked example.</div>`}
+      <p class="tiny mute">Rounding: each line is split to the rupee by largest remainder, so every line sums exactly. A tie goes to whoever has the lowest running total.</p>
+    </div>
+    <div class="card"><h2>Fixed outflows</h2>
+      <div class="wrap"><table class="t"><thead><tr><th>Name</th><th>Amount</th><th>Date</th><th>Source</th><th></th></tr></thead><tbody>
+      ${S.outflows.map((o, i) => `<tr><td style="min-width:120px"><input type="text" value="${esc(o.name)}" data-action="setOutflow" data-i="${i}" data-f="name" aria-label="Outflow name"></td>
+        <td><div class="money" style="min-width:100px"><span>₹</span><input type="text" inputmode="numeric" value="${num(o.amt)}" data-action="setOutflow" data-i="${i}" data-f="amt" aria-label="Outflow amount"></div></td>
+        <td><input type="date" value="${o.date}" data-action="setOutflow" data-i="${i}" data-f="date" aria-label="Outflow date"></td><td class="small mute">entered</td>
+        <td>${b('', 'removeOutflow', {d:{i}, cls:'ghost sm', icon:'x', title:'Remove'})}</td></tr>`).join('')}
+      </tbody></table></div>
+      <div class="row" style="margin-top:8px">${b('Add outflow', 'addOutflow', {cls:'sm'})}${b('Link RazorpayX or Tally', 'openSheet', {cls:'sm ghost', d:{kind:'source', id:'connector'}})}</div>
+    </div>
+    <div class="card"><h2>Counts owner</h2>
+      <div class="chips">${b('You', 'setOwner', {arg:'operator', cls:'chip ' + (S.countsOwner === 'operator' ? 'on' : '')})}${b(`Front desk (${esc(T().staff)})`, 'setOwner', {arg:'frontdesk', cls:'chip ' + (S.countsOwner === 'frontdesk' ? 'on' : '')})}</div>
+      <p class="tiny mute" style="margin-top:6px">Who sends the monthly ${Object.keys(S.counts).join(' and ')} register.</p>
+    </div>
+    <div class="card"><div class="row sb"><h2 style="margin:0">History <span class="mute small" style="font-weight:400">optional</span></h2>${S.baselineSkipped ? '' : b('Skip', 'skipBaseline', {cls:'ghost sm'})}</div>
+      ${S.baselineSkipped ? `<p class="small mute" style="margin-top:8px">Skipped — cycle 1 is the baseline. ${b('Add history', 'skipBaseline', {cls:'link'})}</p>` :
+      `<div class="wrap" style="margin-top:8px"><table class="t"><thead><tr><th>Month</th><th>Collected by due</th><th>Total</th></tr></thead><tbody>
+      ${S.baseline.map((r, i) => `<tr><td>${r.month}</td><td><input type="text" inputmode="numeric" placeholder="₹" value="${r.collectedByDue ? num(r.collectedByDue) : ''}" data-action="setBaseline" data-i="${i}" data-f="collectedByDue" aria-label="${r.month} collected by due"></td><td><input type="text" inputmode="numeric" placeholder="₹" value="${r.total ? num(r.total) : ''}" data-action="setBaseline" data-i="${i}" data-f="total" aria-label="${r.month} total"></td></tr>`).join('')}
+      </tbody></table></div><p class="tiny mute">Lets the month report compare against how collection went before the agent.</p>`}
+    </div>
+    <div class="card"><h2>Data sources</h2>
+      <div class="prow"><span class="grow"><b>Invoices &amp; Smart Collect</b><br><span class="small mute">${S.sources.invoices ? 'Connected' : 'Disconnected — issuing is blocked'}</span></span>${pill(S.sources.invoices ? 'on' : 'off', S.sources.invoices ? 'ok' : 'bad')}${b('Manage', 'openSheet', {cls:'sm', d:{kind:'source', id:'invoices'}})}</div>
+      <div class="prow"><span class="grow"><b>WhatsApp</b><br><span class="small mute">${S.sources.whatsapp ? 'Connected' : 'Disconnected — sending is blocked'}</span></span>${pill(S.sources.whatsapp ? 'on' : 'off', S.sources.whatsapp ? 'ok' : 'bad')}${b('Manage', 'openSheet', {cls:'sm', d:{kind:'source', id:'whatsapp'}})}</div>
+    </div>
+    <div class="card"><h2>Permissions</h2>
+      ${[['flag','Flag a discrepancy','Usage mismatches and late-payment signals'],['draft','Draft reminders','Messages in your voice, sent only when you approve'],['plan','Propose a plan','Instalments sized to your cash calendar']].map(([k, l, s]) =>
+        `<div class="prow"><span class="grow"><b>${l}</b><br><span class="small mute">${s}</span></span><button type="button" class="tg ${S.perms[k] ? 'on' : ''}" role="switch" aria-checked="${S.perms[k]}" aria-label="${l}" data-action="togglePerm" data-arg="${k}"></button></div>`).join('')}
+      <div class="prow"><span class="grow"><b>Never</b><br><span class="small mute">change a share · waive · cut access · finance a gap — blocked by platform</span></span>${ic('lock')}${b('Why', 'openSheet', {cls:'sm ghost', d:{kind:'source', id:'never'}})}</div>
+    </div>
+  </div></div>
+  <div class="card" style="margin-top:14px"><div class="row sb"><span class="small mute">${ruleReady() ? `Pool ${fmt(pool())} across ${S.lines.filter(l => l.amount).length} lines.` : 'Draft the rule or set a line by hand to continue.'}</span>
+  ${b(S.sentRule ? 'Go to invite' : 'Looks right → invite stakeholders', 'toInvite', {cls:'primary big', icon:'arrow', dis:!ruleReady()})}</div></div>`;
+}
+function setupInvite(){
+  const wa = S.sources.whatsapp;
+  return `<div class="g2">
+    <div class="stack"><div class="card"><h2>Who gets rule v${S.ruleVersion}</h2>
+      <div class="wrap"><table class="t"><thead><tr><th>Name</th><th>Phone</th><th>Status</th></tr></thead><tbody>
+      ${EXT.map(id => `<tr><td>${esc(nm(id))}<div class="tiny mute">${esc(P(id).role)}</div></td><td style="min-width:150px"><input type="tel" placeholder="+91 98xxx xxxxx (optional)" value="${esc(P(id).phone)}" data-action="setPhone" data-id="${id}" aria-label="Phone for ${esc(nm(id))}"></td><td>${consentPill(id)}</td></tr>`).join('')}
+      </tbody></table></div>
+      <p class="small mute" style="margin-top:10px">Each stakeholder gets a WhatsApp message with a link to their own page: their share, the math for every line, and the contract. They accept or decline there.</p>
+      <div class="row" style="margin-top:12px">${b(S.sentRule ? `Re-send rule v${S.ruleVersion} to those waiting` : `Send rule v${S.ruleVersion}`, 'sendRule', {cls:'primary big', icon:'send', dis:!wa || !ruleReady() || S.billed})}${b('Back to rule', 'setupStep', {arg:'rule', cls:'ghost'})}</div>
+      ${!wa ? `<p class="reason">WhatsApp is disconnected — reconnect it in Data sources to send.</p>` : S.sentRule ? `<p class="reason">Rule v${S.ruleVersion} was sent. Re-sending only reminds those who haven't answered.</p>` : ''}
+    </div></div>
+    <div><p class="small mute" style="text-align:center;margin:0 0 8px">${ic('eye')} What ${esc(nm('B'))} will see</p>${spage('B', {preview:true})}</div>
+  </div>`;
+}
+function consentPill(id){
+  if(!S.sentRule) return pill('not sent');
+  const c = S.consent[id];
+  if(c === true) return pill('agent-handled', 'ok');
+  if(c === false) return pill('ledger only', 'bad');
+  return pill('awaiting', 'warn');
+}
+
+/* ---------- P3 Stakeholders ---------- */
+function pStakeholders(){
+  const sh = shares();
+  return `<div class="row sb"><div><h1>Stakeholders</h1><p class="lede">Each one sees only their own page. Nobody sees the pool’s collected % or anyone else’s status.</p></div>${b('Preview stakeholder page', 'openPage', {arg:S.viewPayer || 'C', cls:'primary', icon:'eye'})}</div>
+  ${handlesStrip()}
+  <div class="pcards">${PAY.map(id => {
+    const isA = id === 'A';
+    return `<div class="card"><div class="row sb"><div><b>${esc(nm(id))}</b>${isA ? ' <span class="small mute">you</span>' : ''}<div class="small mute">${esc(P(id).role)}${isA ? '' : ' · ' + esc(P(id).history)}</div></div>${isA ? pill('operator', 'acc') : consentPill(id)}</div>
+    <div class="big" style="margin:10px 0 4px">${M(sh[id])}</div><div class="tiny mute">${S.billed ? `share · ${CYCLE} usage${S.paid[id] ? ' · paid ' + fmt(S.paid[id]) : ''}` : `estimate on ${S.countsReceived ? CYCLE : PREV} usage`}</div>
+    ${!isA && S.consent[id] === false ? `<div class="note bad" style="margin-top:10px"><b>Declined:</b> “${esc(S.declineReason[id] || 'No reason given')}”</div><p class="small" style="margin-top:8px">Invoices and the activity log still cover ${esc(nm(id))}; the agent won't message them.</p>
+      <div class="row">${b('Try again', 'resendRule', {arg:id, cls:'sm', icon:'send', dis:!S.sources.whatsapp || S.billed})}${b('Adjust rule', 'adjustRule', {cls:'sm ghost', icon:'edit', dis:S.billed})}</div>` : ''}
+    ${!isA && S.consent[id] === null && S.sentRule && S.active ? `<p class="tiny mute" style="margin-top:8px">Ledger only until they accept — invoiced, never messaged by the agent.</p>` : ''}
+    <div class="row" style="margin-top:12px">${isA ? '' : b('Open page', 'openPage', {arg:id, cls:'sm', icon:'eye'})}${!isA && S.billed ? b('Invoice', 'openSheet', {cls:'sm', icon:'doc', d:{kind:'invoice', id}}) : ''}${isA ? `<span class="small mute">${S.billed ? 'Your share is booked when invoices issue.' : 'Your share is booked at the billing run.'}</span>` : ''}</div></div>`;
+  }).join('')}</div>`;
+}
+
+/* ---------- P4 Usage & billing ---------- */
+function billingStatus(){
+  if(S.billed && S.provisional) return ['provisional', 'warn'];
+  if(S.billed) return [`issued ${fd(S.billedOn)}`, 'ok'];
+  if(!S.countsReceived) return ['waiting for counts', 'warn'];
+  const n = openExc().length;
+  if(n) return [`${n} exception${n > 1 ? 's' : ''} need${n > 1 ? '' : 's'} you`, 'bad'];
+  return ['ready to issue', 'ok'];
+}
+function issueBlock(){
+  if(!S.sources.invoices) return 'Invoices & Smart Collect is disconnected — reconnect it in Setup › Data sources.';
+  if(!ruleReady()) return 'Describe the rule in Setup first.';
+  if(!S.countsReceived) return `Counts for ${CYCLE} haven't arrived from ${ownerName()}.`;
+  if(openExc().length) return 'Resolve the exception above first.';
+  return null;
+}
+function pUsage(){
+  const [st, sc] = billingStatus();
+  const exs = exceptions(), sh = shares(), units = Object.keys(S.counts);
+  const blocked = issueBlock();
+  const n1 = 1 + EXT.filter(i => S.consent[i] === true).length;
+  const sumOk = PAY.reduce((s, i) => s + sh[i], 0) === pool();
+  return `<h1>Usage &amp; billing</h1><p class="lede">One billing run per month: counts in, exceptions cleared, invoices out.</p>
+  <div class="card"><div class="row sb"><h2 style="margin:0">Billing run · ${CYCLE} usage</h2>${pill(st, sc)}</div>
+    <div class="sep"></div>
+    <div class="row sb"><div><h3 style="margin:0">Counts for ${CYCLE} · owner: ${esc(ownerName())}</h3><div class="small mute">${S.countsReceived ? `Received · ${units.map(u => `${PAY.reduce((s, i) => s + (+S.counts[u][i] || 0), 0)} ${u}`).join(' · ')}` : 'Not received yet.'}</div></div>
+    <div class="row">${b('Enter counts', 'toggleGrid', {cls:'sm', icon:'edit', dis:S.billed && !S.provisional})}${b('Upload sheet', 'toggleCsv', {cls:'sm', icon:'upload', dis:S.billed && !S.provisional})}</div></div>
+    ${S.grid ? countsGrid() : ''}
+    ${S.csvOpen ? csvPanel() : ''}
+    ${!S.countsReceived && !S.billed ? `<p class="tiny mute" style="margin-top:8px">If counts are late you can bill on ${PREV}'s counts as provisional; the difference is trued up next cycle.</p>` : ''}
+    ${S.secondSource && exs.length ? `<div class="sep"></div><h3>Exceptions ${AIp()}</h3>${exs.map(e => `<div class="exc"><div class="row sb"><div><b>${esc(nm(e.id))} · ${e.unit}:</b> register ${e.reg}, ${esc(S.secondSource.label)} ${e.sec} · choosing wrong moves ${fmt(e.impact)} between stakeholders</div>${e.res ? pill(e.res === 'second' ? `using ${esc(S.secondSource.label)}` : 'using register', 'ok') : ''}</div>
+      ${e.res ? (e.note ? `<div class="small">${esc(e.note)}</div>` : '') + (S.billed ? '' : `<div class="row" style="margin-top:6px">${b('Change', 'resolveExc', {cls:'sm ghost', d:{key:e.key, choice:''}})}</div>`) :
+      `<div class="row" style="margin-top:8px">${b(`Use register (${e.reg})`, 'resolveExc', {cls:'sm', d:{key:e.key, choice:'register'}})}${b(`Use ${esc(S.secondSource.label)} (${e.sec})`, 'resolveExc', {cls:'sm', d:{key:e.key, choice:'second'}})}${S.countsOwner === 'frontdesk' ? b(`Ask ${esc(T().staff)}`, 'openSheet', {cls:'sm ghost', icon:'wa', d:{kind:'question', id:e.key}}) : ''}</div>`}</div>`).join('')}` : ''}
+    <div class="sep"></div>
+    <div class="strip">
+      <div class="${n1 >= 2 ? '' : 'x'}">${ic(n1 >= 2 ? 'check' : 'info')}<span>Rule v${S.ruleVersion} accepted by ${n1} of 4</span></div>
+      <div class="${sumOk ? '' : 'x'}">${ic(sumOk ? 'check' : 'info')}<span>Shares sum to pool · ${fmt(pool())}</span></div>
+      <div>${ic('check')}<span>Identities dropped in the connector</span></div>
+      <div>${ic('check')}<span>Due date ${fd(DUE)}, never moved</span></div>
+    </div>
+    ${S.billed ? '' : `<div class="row" style="margin-top:14px">${b('Issue invoices and virtual accounts', 'issue', {cls:'primary big', icon:'send', dis:!!blocked})}
+      ${blocked && !S.countsReceived && S.sources.invoices && ruleReady() ? b(`Issue provisional (${PREV} counts)`, 'issueProvisional', {cls:'big'}) : ''}</div>
+      ${blocked ? `<p class="reason">${blocked}</p>` : ''}`}
+  </div>
+  ${S.billed ? `<div class="card"><h2>Invoices${provPill()}</h2>${S.provisional ? `<div class="note warn" style="margin-bottom:10px">Based on ${PREV}'s usage — will be corrected when counts arrive.</div>` : ''}<div class="wrap"><table class="t"><thead><tr><th>No</th><th>Payer</th><th class="n">Amount</th><th>Virtual account</th><th>State</th><th></th></tr></thead><tbody>
+    ${EXT.map(id => `<tr><td class="mono">${S.invoices[id].no}</td><td>${esc(nm(id))}</td><td class="n">${M(sh[id])}</td><td class="mono small">${S.invoices[id].va}</td><td>${stateCell(id)}</td><td>${b('Invoice', 'openSheet', {cls:'sm', d:{kind:'invoice', id}})}</td></tr>`).join('')}
+    </tbody></table></div><p class="tiny mute" style="margin-top:8px">${esc(nm('A'))}'s own share (${M(sh.A)}) is booked, not invoiced.</p></div>` : ''}
+  <div class="card"><div class="row sb"><h2 style="margin:0">Reconciliation detail</h2>${b(S.open.recon ? 'Hide' : 'Show', 'toggleOpen', {arg:'recon', cls:'ghost sm'})}</div>
+    ${S.open.recon ? `<div class="wrap" style="margin-top:10px"><table class="t"><thead><tr><th>Payer</th>${units.map(u => `<th>${u} · register</th>${S.secondSource && S.secondSource.unit === u ? `<th class="n">${esc(S.secondSource.label)}</th>` : ''}`).join('')}</tr></thead><tbody>
+    ${PAY.map(id => `<tr><td>${esc(nm(id))}</td>${units.map(u => `<td style="min-width:80px"><input type="number" min="0" value="${S.counts[u][id]}" data-action="setRegister" data-id="${id}" data-key="${u}" aria-label="${u} for ${esc(nm(id))}"${S.billed || !S.countsReceived ? ' disabled' : ''}></td>${S.secondSource && S.secondSource.unit === u ? `<td class="n">${S.secondSource.vals[id]}</td>` : ''}`).join('')}</tr>`).join('')}
+    </tbody></table></div><p class="tiny mute">${S.countsReceived ? (S.billed ? 'Locked — invoices issued.' : 'Register is editable until invoices issue.') : 'Editable once counts arrive.'}</p>` : ''}
+  </div>
+  <div class="card"><div class="row sb"><h2 style="margin:0">Sources</h2>${b(S.open.sources ? 'Hide' : 'Show', 'toggleOpen', {arg:'sources', cls:'ghost sm'})}</div>
+    ${S.open.sources ? `<div class="prow" style="margin-top:8px"><span class="grow"><b>Register</b><br><span class="small mute">${units.join(' & ')} · kept by ${esc(ownerName())}</span></span>${pill('primary', 'ok')}</div>
+    <div class="prow"><span class="grow"><b>Second source</b><br><span class="small mute">${S.secondSource ? `${esc(S.secondSource.label)} · ${S.secondSource.unit}` : 'None — counts are taken from the register alone'}</span></span>
+    ${S.secondSource ? b('Replace', 'connectSecond', {cls:'sm', dis:S.billed}) + b('Disconnect', 'disconnectSecond', {cls:'sm ghost', dis:S.billed}) : b('Connect', 'openSheet', {cls:'sm', d:{kind:'source', id:'second'}, dis:S.billed}) + b('Use sample', 'connectSecond', {cls:'sm ghost', dis:S.billed})}</div>` : ''}
+  </div>`;
+}
+function countsGrid(){
+  const d = S.countsDraft || S.counts, units = Object.keys(S.counts);
+  return `<div class="note" style="margin-top:10px"><div class="wrap"><table class="t"><thead><tr><th>Payer</th>${units.map(u => `<th>${u}</th>`).join('')}</tr></thead><tbody>
+  ${PAY.map(id => `<tr><td>${esc(nm(id))}</td>${units.map(u => `<td><input type="number" min="0" value="${d[u][id]}" data-action="setCountDraft" data-id="${id}" data-key="${u}" aria-label="${u} for ${esc(nm(id))}"></td>`).join('')}</tr>`).join('')}
+  </tbody></table></div><div class="row" style="margin-top:8px">${b('Save counts', 'saveCounts', {cls:'primary sm', icon:'check'})}${b('Cancel', 'toggleGrid', {cls:'ghost sm'})}</div></div>`;
+}
+function csvPanel(){
+  return `<div class="note" style="margin-top:10px"><b>Upload the register as CSV.</b> The connector keeps only <span class="mono">payer,date,resource,count</span> and drops every other column before anything reaches the agent.
+  <div class="row" style="margin-top:8px"><input type="file" accept=".csv,text/csv" data-action="csvFile" aria-label="CSV file" style="max-width:240px">${b('Use sample sheet', 'csvSample', {cls:'sm'})}${b('Close', 'toggleCsv', {cls:'ghost sm'})}</div>
+  ${S.csvMsg ? `<div class="small" style="margin-top:8px;color:${S.csvMsg.err ? 'var(--bad)' : 'var(--ok)'}">${esc(S.csvMsg.text)}</div>` : ''}</div>`;
+}
+
+/* ---------- P5 Decisions ---------- */
+function kindLabel(i){ return ({reply:'reply · ' + i.intent, prelate:'pre-due signal', question:'question', 'request-time':'request-time', counter:'counter-offer'})[i.kind] || i.kind; }
+function statusPill(i){ return ({open:pill('open', 'warn'), approved:pill('approved', 'ok'), edited:pill('edited & sent', 'ok'), dismissed:pill('dismissed'), auto:pill('auto', 'acc')})[i.status]; }
+function pDecisions(){
+  const open = openItems(), done = S.inbox.filter(i => i.status !== 'open').reverse();
+  return `<div class="row sb"><div><h1>Decisions</h1><p class="lede">The agent proposes; you decide. Amounts always come from the rule and the cash calendar.</p></div>
+  ${open.length ? b(S.replies ? 'Card view' : 'WhatsApp view', 'toggleWA', {cls:'', icon:S.replies ? 'list' : 'wa'}) : ''}</div>
+  ${open.length ? (S.replies ? waView(open[0]) : open.map(decCard).join('')) : watching()}
+  ${done.length ? `<h4 style="margin-top:22px">Decided this cycle</h4>${done.map(decCard).join('')}` : ''}`;
+}
+function cardActions(i){
+  const wa = S.sources.whatsapp, draftable = (i.kind === 'reply' || i.kind === 'prelate');
+  const pg = ['Open their page', 'openPage', {arg:i.from, cls:'ghost', icon:'eye'}];
+  if(i.kind === 'reply' || i.kind === 'prelate'){
+    if(!S.perms.draft || (i.kind === 'reply' && !S.perms.plan)) return [['Dismiss', 'dismissStart', {d:{id:i.id}, cls:'ghost'}], pg];
+    if(!S.tone) return [['Send direct', 'chooseTone', {d:{id:i.id, tone:'direct'}, dis:!wa}], ['Send warm', 'chooseTone', {d:{id:i.id, tone:'warm'}, dis:!wa}], ['Send formal', 'chooseTone', {d:{id:i.id, tone:'formal'}, dis:!wa}], ['Dismiss', 'dismissStart', {d:{id:i.id}, cls:'ghost'}]];
+    return [['Approve', 'approve', {d:{id:i.id}, cls:'primary', icon:'check', dis:!wa}], ['Edit and send', 'editStart', {d:{id:i.id}, icon:'edit', dis:!wa}], ['Dismiss', 'dismissStart', {d:{id:i.id}, cls:'ghost'}], pg];
+  }
+  if(i.kind === 'question') return [['Reply with the usage log', 'qReplyLog', {d:{id:i.id}, cls:'primary', icon:'send', dis:!wa}], ['Adjust the rule instead', 'qAdjust', {d:{id:i.id}, icon:'edit', dis:S.billed}], pg];
+  if(i.kind === 'request-time') return [['Accept', 'rtAccept', {d:{id:i.id}, cls:'primary', icon:'check', dis:!wa}], ['Decline', 'rtDecline', {d:{id:i.id}, dis:!wa}], pg];
+  if(i.kind === 'counter') return [[`Accept ${esc(first(i.from))}'s dates`, 'counterAccept', {d:{id:i.id}, cls:'primary', icon:'check', dis:!wa}], ['Keep original ask', 'counterKeep', {d:{id:i.id}, dis:!wa}], pg];
+  return [pg];
+}
+function planFor(i){
+  if(i.kind !== 'reply') return null;
+  const rem = remaining(i.from);
+  if(i.plan && !i.plan.auto) return {...i.plan, inst1:Math.min(rem, i.plan.inst1), inst2:Math.max(0, rem - i.plan.inst1)};
+  const kd = keyDate({noPlan:true}), g = cashAt(kd, {noPlan:true});
+  const inst1 = Math.min(rem, g.gap || rem);
+  return {inst1, inst2:rem - inst1, d1:DUE, d2:i.said, auto:true, kd, gap:g.gap};
+}
+function draftText(i, tone){
+  const op = S.operator, f = first(i.from);
+  if(i.kind === 'reply'){
+    const p = planFor(i);
+    const ask = p.inst2 > 0 ? `${fmt(p.inst1)} by ${fd(p.d1)} and ${fmt(p.inst2)} by ${fd(p.d2)}` : `${fmt(p.inst1)} by ${fd(p.d1)}`;
+    return ({
+      direct:`${f}, can you do ${ask}? Agar nahi, batao kya possible hai. — ${op}`,
+      warm:`${f} ji, no problem, I understand. Kya ${ask} ho payega? Agar nahi, batao kya possible hai. — ${op}`,
+      formal:`Dear ${nm(i.from)}, thank you for letting us know. Could you pay ${ask}? Agar nahi, batao kya possible hai. Regards, ${op}, ${S.merchant}`})[tone];
+  }
+  if(i.kind === 'prelate'){
+    const r = remaining(i.from), link = `rzp.io/i/${S.invoices[i.from] ? S.invoices[i.from].no.toLowerCase() : 'link'}`;
+    return ({
+      direct:`${f}, reminder: ${fmt(r)} due ${fd(DUE)}. Pay here: ${link} — ${op}`,
+      warm:`${f} ji, ${T().visit === 'Tuesdays' ? 'Tuesday ko aaoge toh' : 'when you are in next,'} ${fmt(r)} ka payment kar dena please — due ${fd(DUE)} hai. ${link} — ${op}`,
+      formal:`Dear ${nm(i.from)}, a gentle reminder that your share of ${fmt(r)} is due on ${fd(DUE)}. Payment link: ${link}. Regards, ${op}`})[tone];
+  }
+  return '';
+}
+function decCard(i){
+  const closed = i.status !== 'open';
+  const head = `<div class="dec-h"><b>${esc(nm(i.from))}</b><span class="mute">·</span>${i.kind === 'reply' ? AIp() + ' ' : ''}<span class="small">${kindLabel(i)}</span>${statusPill(i)}<span class="tiny mute">${fd(i.t)}</span><span style="margin-left:auto">${b('Open their page', 'openPage', {arg:i.from, cls:'link sm'})}</span></div>`;
+  if(closed){
+    return `<div class="card dec closed">${head}
+      ${i.quote ? `<div class="quote">“${esc(i.quote)}”</div>` : ''}
+      ${i.status === 'dismissed' ? `<p class="small">Dismissed · <i>${esc(i.reason || 'no reason')}</i></p><div class="row">${b('Reopen', 'reopen', {d:{id:i.id}, cls:'sm', icon:'reset'})}</div>` : `<p class="small">${esc(i.outcome || '')}</p>${i.sentText ? `<div class="draft">${esc(i.sentText)}</div>` : ''}`}
+    </div>`;
+  }
+  let body = '';
+  if(i.kind === 'reply'){
+    const g0 = cashAt(keyDate({noPlan:true}), {noPlan:true}), kd = keyDate({noPlan:true});
+    const outs = S.outflows.filter(o => dayNum(o.date) > dayNum(DUE) && dayNum(o.date) <= dayNum(kd));
+    const sh = shares();
+    const p = planFor(i);
+    body = `<div class="quote">“${esc(i.quote)}”<small>WhatsApp · ${fd(i.t)}</small></div>
+    <div class="g2e"><div>
+      <h4>Reading ${AIp()}</h4><p class="small"><b>Intent: ${i.intent}.</b> ${esc(i.why)}</p><p class="small mute">History: ${esc(P(i.from).history)}.</p>
+      <h4>Cash position ${RULESp()}</h4>
+      <div class="kv small">${outs.map(o => `<span>${esc(o.name)} · ${fd(o.date)}</span><span class="n">−${fmt(o.amt)}</span>`).join('')}
+        <span class="tot">Needed by ${fd(kd)}</span><span class="n tot">${fmt(g0.need)}</span>
+        <span>Your share, in the account</span><span class="n">${fmt(S.paid.A)}</span>
+        ${['B','D'].map(id => `<span>${esc(nm(id))} ${S.paid[id] >= sh[id] ? 'paid' : 'expected'}</span><span class="n">${id === 'D' && !S.expectD && S.paid.D < sh.D ? '<s>' + fmt(sh[id]) + '</s>' : fmt(sh[id])}</span>`).join('')}
+        <span>${esc(nm(i.from))} · said ${fd(i.said)}</span><span class="n mute">after ${fd(kd)}</span>
+        <span class="tot">Gap on ${fd(kd)}</span><span class="n tot" style="color:var(--bad)">${fmt(g0.gap)}</span></div>
+      <label class="small row" style="margin-top:8px;gap:6px"><input type="checkbox" data-action="toggleExpectD"${S.expectD ? ' checked' : ''}${S.paid.D >= sh.D ? ' disabled' : ''}> Count ${esc(nm('D'))} as expected</label>
+    </div><div>
+      <h4>Proposed ask ${AIp('AI draft · amounts from rules')}</h4>
+      ${S.perms.plan ? `<div class="g2e"><div><label class="f">Instalment 1</label><div class="money"><span>₹</span><input type="text" inputmode="numeric" value="${num(p.inst1)}" data-action="setPlan" data-id="${i.id}" data-f="inst1" aria-label="Instalment 1"></div></div><div><label class="f">by</label><input type="date" value="${p.d1}" max="${DUE}" data-action="setPlan" data-id="${i.id}" data-f="d1" aria-label="Instalment 1 date"></div>
+      <div><label class="f">Instalment 2 (the rest)</label><div class="money"><span>₹</span><input type="text" value="${num(p.inst2)}" disabled aria-label="Instalment 2"></div></div><div><label class="f">by</label><input type="date" value="${p.d2}" data-action="setPlan" data-id="${i.id}" data-f="d2" aria-label="Instalment 2 date"></div></div>
+      ${draftBlock(i)}
+      <p class="small" style="margin-top:10px"><b>Why this message:</b> ${esc(first(i.from))} asked for time; on ${fd(kd)} (${esc(outs.slice(-1)[0] ? outs.slice(-1)[0].name : 'outflows')}) the account would be ${fmt(g0.gap)} short; ${esc(P(i.from).history)}.</p>
+      <p class="small"><b>Not saying:</b> no change to the ${fd(DUE)} due date, no penalty, no mention of anyone else.</p>`
+      : `<div class="note">Proposing a plan is off in Setup › Permissions. Reply to ${esc(first(i.from))} yourself, or turn it on.</div>`}
+    </div></div>`;
+  } else if(i.kind === 'prelate'){
+    body = `<div class="g2e"><div><h4>Signal ${AIp()}</h4><p class="small">${esc(i.signal)}</p><p class="small mute">History: ${esc(P(i.from).history)}.</p></div>
+    <div><h4>One nudge ${AIp('AI draft')}</h4>${S.perms.draft ? draftBlock(i) : `<div class="note">Drafting is off in Setup › Permissions.</div>`}<p class="small" style="margin-top:8px"><b>Not saying:</b> nothing about anyone else, no penalty.</p></div></div>`;
+  } else if(i.kind === 'question'){
+    body = `<div class="quote">“${esc(i.quote)}”<small>From their page · before accepting</small></div><p class="small mute">The agent would reply with ${esc(first(i.from))}'s own usage log for ${esc(i.lineName)} — nobody else's numbers.</p>`;
+  } else if(i.kind === 'request-time'){
+    body = `<div class="quote">“Can I pay by ${fd(i.date)}?”<small>From their page · after billing</small></div>
+    <p class="small">Accepting sets a plan date of <b>${fd(i.date)}</b>. The original due date stays ${fd(DUE)}. ${cashLine(i.from, i.date)}</p>`;
+  } else if(i.kind === 'counter'){
+    body = `<div class="quote">“${esc(i.quote)}”<small>From their page</small></div>
+    <div class="kv small"><span>Your ask</span><span class="n">${fmt(S.planC.inst1)} by ${fd(S.planC.d1)} · ${fmt(S.planC.inst2)} by ${fd(S.planC.d2)}</span><span>Their dates</span><span class="n">${fmt(i.inst1)} by ${fd(i.d1)} · ${fmt(i.inst2)} by ${fd(i.d2)}</span></div>
+    <p class="small" style="margin-top:8px">${counterLine(i)}</p>`;
+  }
+  const acts = cardActions(i).filter(a => a[1] !== 'chooseTone');
+  let actRow;
+  if(S.dismissing === i.id) actRow = `<div class="row"><span class="small mute">Why dismiss?</span>${['Not needed','I’ll handle it myself','The reading is wrong'].map(r => b(r, 'dismiss', {d:{id:i.id, reason:r}, cls:'sm'})).join('')}${b('Cancel', 'dismissCancel', {cls:'ghost sm'})}</div>`;
+  else if(S.editing[i.id] != null) actRow = `<div class="row">${b('Send edited', 'editSend', {d:{id:i.id}, cls:'primary', icon:'send', dis:!S.sources.whatsapp})}${b('Cancel', 'editCancel', {d:{id:i.id}, cls:'ghost'})}</div>`;
+  else actRow = `<div class="row">${acts.map(a => b(a[0], a[1], a[2])).join('')}</div>${!S.sources.whatsapp ? `<p class="reason">WhatsApp is disconnected — sending is blocked until you reconnect it in Setup › Data sources.</p>` : ''}`;
+  return `<div class="card dec">${head}${body}<div class="sep"></div>${actRow}</div>`;
+}
+function draftBlock(i){
+  if(S.editing[i.id] != null) return `<textarea data-live="editText" data-id="${i.id}" aria-label="Edit message" style="min-height:90px">${esc(S.editing[i.id])}</textarea>`;
+  if(!S.tone) return `<p class="small mute" style="margin:8px 0 6px">First decision: pick the voice. Choosing one sends it and sets your tone.</p><div class="drafts">${['direct','warm','formal'].map(t => `<button type="button" class="opt" data-action="chooseTone" data-id="${i.id}" data-tone="${t}"${S.sources.whatsapp ? '' : ' disabled'}><b>${t}</b>${esc(draftText(i, t))}</button>`).join('')}</div>`;
+  return `<div class="row sb" style="margin:8px 0 6px"><span class="tiny mute">Tone: ${S.tone} · ${b('change', 'changeTone', {cls:'link sm'})}</span></div><div class="draft">${esc(draftText(i, S.tone))}</div>`;
+}
+function cashLine(id, date){
+  const kd = keyDate();
+  if(dayNum(date) <= dayNum(kd)) return `That is before ${fd(kd)}, so the cash calendar is unaffected.`;
+  const save = S.plans[id]; S.plans[id] = {date, accepted:true};
+  const g = cashAt(kd); S.plans[id] = save; if(!save) delete S.plans[id];
+  return `With this date the ${fd(kd)} gap would be ${fmt(g.gap)}.`;
+}
+function counterLine(i){
+  const kd = keyDate({noPlan:true});
+  const save = S.planC; S.planC = {...save, inst1:i.inst1, inst2:i.inst2, d1:i.d1, d2:i.d2};
+  const g = cashAt(kd); S.planC = save;
+  const g2 = cashAt(kd);
+  return `With their dates the ${fd(kd)} gap would be ${fmt(g.gap)} (your ask: ${fmt(g2.gap)}). ${RULESp()}`;
+}
+function waView(i){
+  const acts = cardActions(i).slice(0, 4);
+  let summary = `${nm(i.from)} · ${kindLabel(i)}`;
+  if(i.kind === 'reply'){ const p = planFor(i), g = cashAt(keyDate({noPlan:true}), {noPlan:true}); summary += `\n“${i.quote}”\n\n${fd(keyDate({noPlan:true}))} would be ${fmt(g.gap)} short. Proposed: ${fmt(p.inst1)} by ${fd(p.d1)}${p.inst2 ? `, ${fmt(p.inst2)} by ${fd(p.d2)}` : ''}.`; }
+  else if(i.kind === 'prelate') summary += `\n${i.signal}`;
+  else if(i.quote) summary += `\n“${i.quote}”`;
+  else if(i.kind === 'request-time') summary += `\nAsks to pay by ${fd(i.date)}.`;
+  const draft = (i.kind === 'reply' || i.kind === 'prelate') && S.tone ? draftText(i, S.tone) : '';
+  return `<div class="wa"><div class="tiny" style="opacity:.6;margin-bottom:8px">Shared Cost Recovery Agent · WhatsApp</div>
+  <div class="b">${esc(summary)}</div>${draft ? `<div class="b">Draft:\n${esc(draft)}</div>` : ''}
+  <div class="b">Reply ${acts.map((a, k) => `${k + 1} ${a[0].replace(/<[^>]+>/g, '')}`).join(' · ')}</div>
+  <div class="codes">${acts.map((a, k) => b(`${k + 1} · ${a[0]}`, a[1], {...a[2], cls:''})).join('')}</div></div>
+  ${openItems().length > 1 ? `<p class="small mute" style="margin-top:8px">${openItems().length - 1} more waiting after this one.</p>` : ''}`;
+}
+function watching(){
+  const un = EXT.filter(id => S.billed ? remaining(id) > 0 : true);
+  const rows = un.map(id => {
+    if(!handled(id)) return [id, 'Ledger only', '—', 'Nothing — invoice and log only'];
+    if(id === 'B') return [id, P(id).history, `If unpaid on ${fd(DUE)}`, `One reminder on ${fd(addDays(DUE, 1))}`];
+    if(id === 'C') return [id, P(id).history, 'A reply to the invoice reminder', `A plan sized to the ${fd(keyDate())} gap`];
+    return [id, `visits ${T().visit} · ${P(id).history}`, `No visit before ${fd(DUE)}`, 'One nudge before the visit'];
+  });
+  return `<div class="card"><div class="empty" style="padding:12px 0 18px">${ic('check')} No decisions waiting.</div>
+  <h3>What the agent is watching</h3>${rows.length ? `<div class="wrap"><table class="t"><thead><tr><th>Stakeholder</th><th>Signal</th><th>When</th><th>Would propose</th></tr></thead><tbody>
+  ${rows.map(r => `<tr><td>${esc(nm(r[0]))}</td><td class="small">${esc(r[1])}</td><td class="small">${esc(r[2])}</td><td class="small">${esc(r[3])}</td></tr>`).join('')}</tbody></table></div>` : `<p class="small mute">Everyone has paid. Nothing to watch.</p>`}</div>`;
+}
+
+/* ---------- P6 Stakeholder page ---------- */
+function pPayer(){
+  const id = S.viewPayer;
+  return `${b('← Stakeholders', 'nav', {arg:'stakeholders', cls:'link'})}
+  <div class="row sb" style="margin:10px 0"><div class="chips">${EXT.map(x => b(esc(nm(x)), 'viewPayer', {arg:x, cls:'chip ' + (x === id ? 'on' : '')})).join('')}</div></div>
+  <p class="small mute">What ${esc(nm(id))} sees. Actions taken here are recorded as their actions.</p>
+  ${spage(id, {})}`;
+}
+function spage(id, o){
+  const pv = !!o.preview;
+  const act = pv ? 'previewOnly' : null;
+  const sent = pv || S.sentRule;
+  const consent = pv ? null : S.consent[id];
+  const sh = shares()[id], rem = remaining(id), paid = S.paid[id];
+  const B = (label, action, opt) => b(label, act || action, opt);
+  const comp = computeShares(S.lines, basisCounts());
+  const plan = id === 'C' && S.planC && S.planC.sent ? S.planC : null;
+  const accepted = S.plans[id] && S.plans[id].accepted ? S.plans[id] : null;
+  let due = `Due ${fd(DUE)}`;
+  if(plan && S.planAccepted) due = `Your plan: ${fmt(plan.inst1)} by ${fd(plan.d1)}${plan.inst2 ? ` · ${fmt(plan.inst2)} by ${fd(plan.d2)}` : ''} <span class="mute">· original due ${fd(DUE)}</span>`;
+  else if(accepted) due = `Agreed: by ${fd(accepted.date)} <span class="mute">· original due ${fd(DUE)}</span>`;
+  let primary = '';
+  if(!sent) primary = '';
+  else if(consent === null && !S.billed || (pv)) {
+    primary = S.declining === id && !pv ? `<div class="contract"><b>Decline rule v${S.ruleVersion}</b><p>Tell ${esc(S.operator)} why. You'll still be invoiced by the agreed arrangement; the agent just won't message you.</p>
+      <textarea data-live="declineText" style="min-height:70px" placeholder="e.g. Utilities should be by hours, not equal">${esc(S.declineDraft || '')}</textarea>
+      <div class="row" style="margin-top:8px">${B('Send', 'declineSend', {arg:id, cls:'primary sm'})}${B('Cancel', 'declineCancel', {cls:'ghost sm'})}</div></div>`
+    : `<div class="contract"><b>The contract · rule v${S.ruleVersion}</b><p style="margin-top:6px">You will be invoiced by this rule in ${esc(S.merchant)}'s name. No auto-debit. No access changes. You can question any line before accepting, request time after, and see your own usage log any time. Your status is never shown to anyone else.</p>
+      <div class="row">${B('Accept the rule', 'acceptRule', {arg:id, cls:'primary', icon:'check'})}${B('Decline with a reason', 'declineStart', {arg:id, cls:'ghost'})}</div></div>`;
+  } else if(plan && !S.planAccepted && rem > 0){
+    primary = `<div class="contract"><b>Message from ${esc(S.operator)}</b><p style="margin-top:6px">${esc(plan.text || '')}</p><p class="small mute">Your original due date stays ${fd(DUE)}.</p>
+      <div class="row">${B('Accept the plan', 'planAccept', {arg:id, cls:'primary', icon:'check'})}${B('Suggest different dates', 'planCounter', {arg:id, cls:'ghost'})}</div></div>`;
+  } else if(S.billed && rem > 0){
+    let amt = rem;
+    if(plan && S.planAccepted){ const s = sched('C')[0]; amt = s ? s.amt : rem; }
+    primary = `${B(`Pay ${fmt(amt)} · UPI`, 'payNow', {arg:id, cls:'primary big wide', icon:'pay', d:{amt}})}
+      <div style="text-align:center;margin-top:6px">${B(S.neft ? 'Hide bank details' : 'NEFT instead', 'toggleNeft', {cls:'link sm'})}</div>
+      ${S.neft && S.invoices[id] ? `<div class="contract"><div class="kv small"><span>Account no</span><span class="n">${S.invoices[id].va}</span><span>IFSC</span><span class="n">${IFSC}</span><span>Name</span><span class="n">${esc(S.merchant)}</span></div><div class="row" style="margin-top:8px">${B('Copy details', 'copy', {cls:'sm', icon:'copy', d:{text:`${S.merchant} · A/c ${S.invoices[id].va} · IFSC ${IFSC}`}})}</div><p class="tiny mute">This account is yours alone and stays the same every month.</p></div>` : ''}`;
+  } else if(S.billed && rem === 0){
+    primary = `<div class="note ok" style="text-align:center">${ic('check')} Paid in full · thank you</div>`;
+  } else if(consent === true){
+    primary = `<div class="note">Rule v${S.ruleVersion} accepted. Your first invoice comes after ${CYCLE} counts.</div>`;
+  } else if(consent === false){
+    primary = `<div class="note">You declined rule v${S.ruleVersion}. You'll still be invoiced; ${esc(S.operator)} has your reason.</div>`;
+  }
+  return `<div class="phone"><div class="in">
+    <div class="fac">${esc(S.merchant)}</div><div class="small mute">Your share of shared costs · ${CYCLE} usage</div>
+    ${!sent ? `<div class="banner warn"><b>Not sent yet.</b> ${esc(nm(id))} hasn't received the rule. ${b('Go to Setup to send', 'goSend', {cls:'link sm'})}</div>` : ''}
+    ${S.billed && S.provisional ? `<div class="banner warn">Based on last month's usage — will be corrected when counts arrive. You can pay now or wait.</div>` : ''}
+    <div class="amt">${S.billed ? M(rem || sh) : fmt(sh)}${provPill()}</div>
+    <div class="small">${S.billed ? (rem === 0 ? 'Paid' : (paid ? `${fmt(paid)} paid · ${fmt(rem)} left · ` : '') + due) : `Estimate on ${S.countsReceived ? CYCLE : PREV} usage · ${due}`}</div>
+    ${S.billed && S.invoices[id] ? `<div class="tiny mute mono">Invoice ${S.invoices[id].no}</div>` : ''}
+    <div style="margin-top:14px">${primary}</div>
+    <div class="lines" style="margin-top:12px">${S.lines.filter(L => L.amount).map(L => `<button type="button" class="ln" data-action="${act || 'openMath'}" data-id="${id}" data-key="${L.key}"><span><span class="nm">${esc(L.name)}</span><small>${basisLine(L, id)}</small></span><span class="n">${fmt(comp.byLine[L.key].out[id])}</span></button>`).join('')}</div>
+    <div style="text-align:center;margin-top:10px">${B('Something\'s not right', 'openMenu', {arg:id, cls:'link sm'})}</div>
+    <div class="foot">${ic('lock')} Only you and the facility see this page.</div>
+  </div></div>`;
+}
+function basisLine(L, id){
+  const c = basisCounts();
+  if(L.mode === 'count'){ const u = c[L.unit] || {}; const tot = PAY.reduce((s, i) => s + (+u[i] || 0), 0); return `${u[id] || 0} of ${tot} ${L.unit}`; }
+  if(L.mode === 'third') return id === 'D' ? 'one-third, fixed' : 'equal share of the rest';
+  return 'equal ×4';
+}
+
+/* ---------- P7 Activity ---------- */
+function pActivity(){
+  const f = S.logFilter, rows = S.log.filter(l => f === 'all' || l.who === f);
+  return `<div class="row sb"><div><h1>Activity</h1><p class="lede"><b class="who AI">AI</b> lines are the agent’s readings and drafts. <b class="who You">You</b> lines are your decisions. <b class="who Payer">Payer</b> lines are what stakeholders did on their page or WhatsApp. <b class="who System">System</b> lines are invoices, payments and the clock.</p></div>${b('Copy', 'copyLog', {icon:'copy'})}</div>
+  <div class="chips" style="margin-bottom:12px">${['all','AI','You','Payer','System'].map(x => b(x, 'logFilter', {arg:x, cls:'chip ' + (f === x ? 'on' : '')})).join('')}</div>
+  <div class="card"><div class="feed">${rows.map(feedRow).join('') || `<div class="mute small">Nothing here yet.</div>`}</div></div>`;
+}
+
+/* ---------- P8 Month report ---------- */
+function metrics(){
+  const sh = shares(), p = pool();
+  let byDue = 0, extByDue = 0, extTotal = 0, coll = 0, agentBrought = 0;
+  PAY.forEach(id => {
+    S.paidDates[id].forEach(x => { coll += x.amt; if(dayNum(x.d) <= dayNum(DUE)){ byDue += x.amt; if(id !== 'A') extByDue += x.amt; } });
+    if(id !== 'A') extTotal += sh[id];
+  });
+  const planned = id => (id === 'C' && S.planC && S.planC.sent) || (S.plans[id] && S.plans[id].accepted && S.plans[id].viaAgent);
+  EXT.forEach(id => { if(planned(id)) agentBrought += S.paidDates[id].filter(x => dayNum(x.d) <= dayNum(DUE)).reduce((s, x) => s + x.amt, 0); });
+  return {p, byDue, extByDue, extTotal, coll, agentBrought};
+}
+function adherence(){
+  const inst = [];
+  if(S.planC && S.planC.sent && S.planAccepted){ inst.push({id:'C', d:S.planC.d1, cum:S.planC.inst1}); if(S.planC.inst2) inst.push({id:'C', d:S.planC.d2, cum:S.planC.inst1 + S.planC.inst2}); }
+  EXT.forEach(id => { if(S.plans[id] && S.plans[id].accepted) inst.push({id, d:S.plans[id].date, cum:shares()[id]}); });
+  const due = inst.filter(x => dayNum(x.d) <= dayNum(S.today));
+  const met = due.filter(x => S.paidDates[x.id].filter(p => dayNum(p.d) <= dayNum(x.d)).reduce((s, p) => s + p.amt, 0) >= x.cum).length;
+  return {met, n:due.length, total:inst.length};
+}
+function pReport(){
+  if(!S.billed) return `<h1>Month report</h1><div class="card"><div class="empty">${ic('chart')}<p>The report starts at the first billing run.</p>${b('Go to Usage & billing', 'nav', {arg:'usage', cls:'primary'})}</div></div>`;
+  const m = metrics(), p = m.p, sh = shares();
+  const cfExt = m.extByDue - m.agentBrought;
+  const decided = S.inbox.filter(i => i.status !== 'open'), asIs = decided.filter(i => i.status === 'approved').length;
+  const executed = decided.filter(i => i.status === 'approved' || i.status === 'edited').length;
+  const ad = adherence();
+  const reminders = S.sent.filter(s => s.auto).length, agentMsgs = S.sent.filter(s => s.via === 'agent').length;
+  const base = S.baseline.filter(r => r.total && r.collectedByDue);
+  const baseP = base.length ? Math.round(base.reduce((s, r) => s + r.collectedByDue / r.total * 100, 0) / base.length) : null;
+  const c = S.inbox.find(i => i.kind === 'reply' && i.from === 'C');
+  const prel = S.inbox.find(i => i.kind === 'prelate');
+  const c1paid = S.planC && S.planAccepted && S.paidDates.C.filter(x => dayNum(x.d) <= dayNum(S.planC.d1)).reduce((s, x) => s + x.amt, 0) >= S.planC.inst1;
+  const dLate = S.paidDates.D.some(x => dayNum(x.d) > dayNum(DUE)) || (dayNum(S.today) > dayNum(DUE) && remaining('D') > 0);
+  const learned = [
+    [S.tone ? `${S.operator} prefers ${S.tone} drafts` : `${S.operator} will want a warm, Hinglish voice`, S.tone ? ['operator-confirmed', 'ok'] : ['hypothesis', '']],
+    [c1paid ? `${first('C')} keeps a plan once agreed — paid instalment 1 by ${fd(S.planC.d1)}` : `${first('C')} pays when a plan is sized and dated`, c1paid ? ['observed once', 'acc'] : ['hypothesis', '']],
+    prel && prel.status === 'dismissed' ? [`${S.operator} handles ${first('D')} personally`, ['operator-confirmed', 'ok']] :
+      [prel && prel.status !== 'open' && dLate ? `A pre-due nudge didn't move ${first('D')}; try the morning of the next visit` : `${first('D')} pays after a visit, not on a reminder`, prel && prel.status !== 'open' && dLate ? ['observed once', 'acc'] : ['hypothesis', '']]
+  ];
+  return `<h1>Month report · ${CYCLE}</h1><p class="lede">${S.closed ? 'Cycle closed ' + fd(S.today) + '.' : 'Cycle in progress · ' + fd(S.today) + '.'} Original due date ${fd(DUE)}.</p>
+  <div class="tiles t3">
+    <div class="tile"><div class="k">Covered by original due</div><div class="v">${pct(m.byDue, p)}%</div><div class="s">${fmt(m.byDue)} of ${fmt(p)} · incl. your share</div></div>
+    <div class="tile"><div class="k">External by original due</div><div class="v">${pct(m.extByDue, m.extTotal)}%</div><div class="s">${fmt(m.extByDue)} of ${fmt(m.extTotal)}</div></div>
+    <div class="tile"><div class="k">Collected to date</div><div class="v">${pct(m.coll, p)}%</div><div class="s">${fmt(m.coll)}</div></div>
+  </div>
+  <div class="progress"><div style="width:${m.byDue / p * 100}%;background:var(--ok)"></div><div style="width:${(m.coll - m.byDue) / p * 100}%;background:var(--warn)"></div></div>
+  ${S.trueUp ? trueUpCard() : ''}
+  <div class="g2e">
+    <div class="card"><h2>Payers${provPill()}</h2><div class="wrap"><table class="t"><thead><tr><th>Payer</th><th class="n">Share</th><th class="n">By due</th><th class="n">Paid</th><th>State</th></tr></thead><tbody>
+    ${PAY.map(id => `<tr><td>${esc(nm(id))}</td><td class="n">${M(sh[id])}</td><td class="n">${fmt(S.paidDates[id].filter(x => dayNum(x.d) <= dayNum(DUE)).reduce((s, x) => s + x.amt, 0))}</td><td class="n">${fmt(S.paid[id])}</td><td>${stateCell(id)}</td></tr>`).join('')}
+    </tbody></table></div></div>
+    <div class="card"><h2>Against a fixed reminder schedule</h2>
+      <p class="small">A fixed schedule sends the same reminders to everyone and accepts whatever date comes back. ${c ? `${esc(first('C'))}'s own date was ${fd(c.said)}, so on that schedule external collection by the original due date would have been <b>${pct(cfExt, m.extTotal)}%</b> (${fmt(cfExt)} of ${fmt(m.extTotal)}) instead of <b>${pct(m.extByDue, m.extTotal)}%</b>.` : `No stakeholder asked for time this cycle, so the agent's result equals the schedule's: <b>${pct(m.extByDue, m.extTotal)}%</b> external by the original due date.`}
+      ${m.agentBrought ? `The plan brought ${fmt(m.agentBrought)} in before the due date, sized to the ${fd(keyDate({noPlan:true}))} gap.` : ''} Messages: ${reminders} invoice reminder${reminders === 1 ? '' : 's'} and ${agentMsgs} message${agentMsgs === 1 ? '' : 's'} you approved.${baseP != null ? ` Your history before the agent: ${baseP}% collected by due.` : S.baselineSkipped ? ' This cycle is your baseline.' : ''}</p></div>
+  </div>
+  <div class="g2e" style="margin-top:14px">
+    <div class="card"><h2>Proposals this cycle</h2><div class="kv">
+      <span>Decided</span><span class="n">${decided.length} of ${S.inbox.length}</span>
+      <span>Accepted as drafted</span><span class="n">${asIs}</span>
+      <span>Executed (sent)</span><span class="n">${executed}</span>
+      <span>Effective · plan adherence</span><span class="n">${ad.n ? `${ad.met} of ${ad.n} on time` : ad.total ? 'not due yet' : '—'}</span></div></div>
+    <div class="card"><h2>What the agent learned ${AIp()}</h2>${learned.map(([t, [lb, c]]) => `<div class="prow"><span class="grow small">${esc(t)}</span>${pill(lb, c)}</div>`).join('')}</div>
+  </div>
+  <div class="card"><div class="row sb"><h2 style="margin:0">How these numbers are computed</h2>${b(S.open.how ? 'Hide' : 'Show', 'toggleOpen', {arg:'how', cls:'ghost sm'})}</div>
+  ${S.open.how ? `<div class="small" style="margin-top:10px"><p><b>Covered by original due</b> = everything in the account by ${fd(DUE)}, including your own share booked at the billing run, ÷ the pool.</p>
+  <p><b>External by original due</b> = what ${EXT.map(nm).map(esc).join(', ')} paid by ${fd(DUE)} ÷ their shares. A plan never moves the due date, so instalments after it count as late.</p>
+  <p><b>Collected to date</b> = all payments ÷ the pool.</p><p><b>Fixed schedule</b> = the same cycle with any agent-proposed instalment before the due date moved to the date the stakeholder named.</p></div>` : ''}</div>`;
+}
+function trueUpCard(){
+  const t = S.trueUp;
+  return `<div class="card" style="border-color:var(--warn)"><h2>True-up next cycle ${RULESp()}</h2><p class="small mute">${CYCLE} was billed provisionally on ${PREV}'s counts. Counts arrived on ${fd(t.on)}; these differences carry into the next invoice.</p>
+  <div class="wrap"><table class="t"><thead><tr><th>Payer</th><th class="n">Billed</th><th class="n">Actual</th><th class="n">True-up</th></tr></thead><tbody>
+  ${PAY.map(id => `<tr><td>${esc(nm(id))}</td><td class="n">${fmt(t.billed[id])}</td><td class="n">${fmt(t.actual[id])}</td><td class="n" style="color:${t.diff[id] > 0 ? 'var(--bad)' : t.diff[id] < 0 ? 'var(--ok)' : 'inherit'}">${t.diff[id] > 0 ? '+' : t.diff[id] < 0 ? '−' : ''}${fmt(Math.abs(t.diff[id]))}</td></tr>`).join('')}</tbody></table></div></div>`;
+}
+
+/* ---------- Sheet (one modal, variants) ---------- */
+function sheet(kind, p){
+  let title = '', body = '';
+  if(kind === 'math'){
+    const L = S.lines.find(l => l.key === p.key), id = p.id;
+    const comp = computeShares(S.lines, basisCounts()), r = comp.byLine[L.key];
+    const c = basisCounts();
+    title = esc(L.name);
+    let eq;
+    if(L.mode === 'count'){ const tot = PAY.reduce((s, i) => s + (+c[L.unit][i] || 0), 0); eq = `${c[L.unit][id]} of ${tot} ${L.unit} × ${fmt(L.amount)} = ${dec(r.exact[id])} → <b>${fmt(r.out[id])}</b>`; }
+    else if(L.mode === 'third') eq = id === 'D' ? `⅓ × ${fmt(L.amount)} = ${dec(L.amount / 3)} → <b>${fmt(r.out[id])}</b> (rounded down)` : `(${fmt(L.amount)} − ${fmt(r.out.D)}) ÷ 3 = ${dec(r.exact[id])} → <b>${fmt(r.out[id])}</b>`;
+    else eq = `1 of 4 × ${fmt(L.amount)} = ${dec(r.exact[id])} → <b>${fmt(r.out[id])}</b>`;
+    const ss = S.secondSource;
+    const ev = L.mode === 'count' ? `Register (${esc(ownerName())}): ${c[L.unit][id]} ${L.unit}${ss && ss.unit === L.unit ? ` · ${esc(ss.label)}: ${ss.vals[id]}${+ss.vals[id] === +c[L.unit][id] ? ' — match' : ' — checked by ' + esc(S.operator)}` : ''}` : L.mode === 'third' ? 'The fraction is written in the rule you accepted.' : 'No usage needed — split equally.';
+    const canQ = !S.billed && S.consent[id] !== false;
+    body = `<p class="small mute">${esc(nm(id))} · ${CYCLE} usage · rule v${S.ruleVersion}</p><div class="draft mono" style="font-size:13px">${eq}</div>
+      <p class="small" style="margin-top:10px"><b>Evidence:</b> ${ev}</p><p class="tiny mute">Rounded by largest remainder so the line sums to exactly ${fmt(L.amount)}.</p>
+      <div class="row" style="margin-top:12px">${b('Question this line before billing', 'questionLine', {cls:'sm', d:{id, key:L.key}, dis:!canQ})}${b('Dispute this line after billing', 'noop', {cls:'sm', dis:true})}<span class="tiny mute">coming in v1.1</span></div>`;
+  } else if(kind === 'question'){
+    const e = exceptions().find(x => x.key === p.id);
+    title = `Ask ${esc(T().staff)}`;
+    const msg = e ? `${T().staff}, ${CYCLE} register mein ${first(e.id)} ke ${e.reg} ${e.unit} hain, ${S.secondSource.label} mein ${e.sec}. Kaunsa sahi hai?` : '';
+    body = e ? `<p class="small mute">${AIp('AI draft')} Sent from your WhatsApp to ${esc(T().staff)}.</p><div class="draft">${esc(msg)}</div>
+      <div class="row" style="margin-top:12px">${b('Approve and send', 'sendAsk', {cls:'primary', icon:'send', d:{key:e.key}, dis:!S.sources.whatsapp})}${b('Cancel', 'closeSheet', {cls:'ghost'})}</div>${S.sources.whatsapp ? '' : '<p class="reason">WhatsApp is disconnected.</p>'}` : '<p>Nothing to ask.</p>';
+  } else if(kind === 'request-time'){
+    title = 'Request time';
+    body = `<p class="small">Pick the date you can pay by. ${esc(S.operator)} decides; the original due date stays ${fd(DUE)}.</p><div class="row">${['2026-10-07','2026-10-14','2026-10-20'].map(d => b(`By ${fd(d)}`, 'requestTime', {cls:'', d:{id:p.id, date:d}})).join('')}</div>`;
+  } else if(kind === 'neft'){
+    const inv = S.invoices[p.id];
+    title = 'Payment details';
+    body = `<div class="kv"><span>Beneficiary</span><span class="n">${esc(S.merchant)}</span><span>Account no</span><span class="n">${inv.va}</span><span>IFSC</span><span class="n">${IFSC}</span><span>UPI</span><span class="n">${inv.vpa}</span></div>
+      <div class="row" style="margin-top:12px">${b('Copy details', 'copy', {cls:'primary sm', icon:'copy', d:{text:`${S.merchant} · A/c ${inv.va} · IFSC ${IFSC} · UPI ${inv.vpa}`}})}</div>`;
+  } else if(kind === 'menu'){
+    const id = p.id;
+    title = p.sub === 'log' ? 'Your usage log' : p.sub === 'rule' ? `The rule · v${S.ruleVersion}` : p.sub === 'question' ? 'Question a line' : 'Something\'s not right';
+    if(p.sub === 'log'){ const c = basisCounts(); body = `<div class="kv">${Object.keys(c).map(u => `<span>${u} · ${S.countsReceived || S.billed ? CYCLE : PREV}</span><span class="n">${c[u][id]}</span>`).join('')}</div><p class="tiny mute" style="margin-top:8px">Only your own counts. Source: the ${esc(ownerName())} register.</p>`; }
+    else if(p.sub === 'rule') body = `<div class="wrap"><table class="t"><tbody>${S.lines.filter(L => L.amount).map(L => `<tr><td>${esc(L.name)}</td><td class="n">${fmt(L.amount)}</td><td class="small">${L.mode === 'count' ? 'by ' + L.unit : L.mode === 'third' ? esc(first('D')) + ' ⅓, rest equal' : 'equal ×4'}</td></tr>`).join('')}</tbody></table></div><p class="tiny mute">Rounded to the rupee by largest remainder.</p>`;
+    else if(p.sub === 'question') body = `<div class="menu">${S.lines.filter(L => L.amount).map(L => b(esc(L.name), 'questionLine', {d:{id, key:L.key}})).join('')}</div>`;
+    else body = `<div class="menu">
+      ${b('Question a line', 'menuSub', {icon:'info', d:{id, sub:'question'}, dis:S.billed || S.consent[id] === false || !S.sentRule})}
+      ${b('Request time', 'openSheet', {icon:'clock', d:{kind:'request-time', id}, dis:!S.billed || remaining(id) === 0})}
+      ${b('Dispute a line · coming in v1.1', 'noop', {icon:'flag', dis:true})}
+      ${b('Usage log', 'menuSub', {icon:'list', d:{id, sub:'log'}})}
+      ${b('The rule', 'menuSub', {icon:'doc', d:{id, sub:'rule'}})}</div>`;
+  } else if(kind === 'invoice'){
+    const id = p.id, inv = S.invoices[id];
+    title = `Invoice ${inv.no}`;
+    body = `<div class="kv"><span>Billed to</span><span class="n">${esc(nm(id))}</span><span>From</span><span class="n">${esc(S.merchant)}</span><span>Issued</span><span class="n">${fd(S.billedOn)}</span><span>Due</span><span class="n">${fd(DUE)}</span><span>Amount</span><span class="n">${M(shares()[id])}</span><span>Paid</span><span class="n">${fmt(S.paid[id])}</span><span>Virtual account</span><span class="n">${inv.va}</span></div>
+      ${S.provisional ? `<p class="small" style="color:var(--warn);margin-top:8px">Provisional — on ${PREV}'s usage.</p>` : ''}
+      <div class="row" style="margin-top:12px">${b('Payment details', 'openSheet', {cls:'sm', icon:'pay', d:{kind:'neft', id}})}${b('Copy invoice link', 'copy', {cls:'sm', icon:'copy', d:{text:`https://rzp.io/i/${inv.no.toLowerCase()}`}})}${b('Open their page', 'openPage', {arg:id, cls:'sm ghost', icon:'eye'})}</div>`;
+  } else if(kind === 'source'){
+    const id = p.id;
+    if(id === 'invoices' || id === 'whatsapp'){
+      const on = S.sources[id];
+      title = id === 'invoices' ? 'Invoices & Smart Collect' : 'WhatsApp';
+      body = id === 'invoices' ? `<p class="small">Issues each invoice in ${esc(S.merchant)}'s name and gives every stakeholder one persistent Smart Collect virtual account (bank transfer and UPI). Payments reconcile to the invoice automatically.</p><p class="small mute">Disconnecting blocks issuing invoices.</p>`
+        : `<p class="small">Sends the rule, the messages you approve, and receives replies. Stakeholders who accepted are messaged only with drafts you approved.</p><p class="small mute">Disconnecting blocks every send — the rule, drafts and replies — with the reason shown on the button.</p>`;
+      body += `<div class="row" style="margin-top:12px">${pill(on ? 'connected' : 'disconnected', on ? 'ok' : 'bad')}${b(on ? 'Disconnect' : 'Connect', 'toggleSource', {arg:id, cls:on ? 'danger' : 'primary'})}</div>`;
+    } else if(id === 'connector'){
+      title = 'Link RazorpayX or Tally';
+      body = `<p class="small">The connector would read scheduled payouts (RazorpayX) or bills (Tally) and keep the outflow table current, so the cash calendar is never stale.</p><div class="note">Not in this build. Enter outflows by hand — the cash calendar uses them the same way.</div>`;
+    } else if(id === 'never'){
+      title = 'Why these are blocked';
+      body = `<p class="small">The agent works for ${esc(S.operator)} but bills colleagues. Four actions would turn a billing tool into leverage over people, so the platform blocks them whatever the permissions say:</p>
+      <ul class="small"><li><b>Change a share</b> — only the accepted rule sets amounts.</li><li><b>Waive</b> — forgiving money is a human call.</li><li><b>Cut access</b> — the agent never touches rooms, equipment or bookings.</li><li><b>Finance a gap</b> — no loans, no credit offers.</li></ul>`;
+    } else if(id === 'second'){
+      title = 'Connect a second source';
+      body = `<p class="small">A second count of the same usage — here, the ${esc(T().second)}. The agent compares it with the register before billing and flags any difference with its rupee impact.</p><div class="row">${b('Use sample', 'connectSecond', {cls:'primary sm'})}</div>`;
+    }
+  } else if(kind === 'about'){
+    title = 'About this build';
+    body = `<p class="small"><b>Shared Collect v8</b> — a working MVP that runs entirely in this page: no backend, no network.</p>
+    <h4>Real code</h4><p class="small">Allocation (largest remainder, ties to the lowest running total), the cash calendar and gap, the billing-run checks, consent and ledger mode, the decision state machine and every number in the month report.</p>
+    <h4>Stubbed model calls, same contract</h4><p class="small">Rule drafting (a keyword parser returns lines, confidence and hits), reply intent (a pattern classifier returns intent and why) and next-best-action (rules pick the card and size the ask; drafts come from templates in your voice). Each is marked with an ${AIp()} pill.</p>
+    <h4>Simulated</h4><p class="small">Razorpay Invoices, Smart Collect virtual accounts, WhatsApp delivery and replies, and payments. Stakeholder actions and the clock are driven from the Scenario drawer.</p>
+    <p class="tiny mute">The hypothesis: an operator moves peer billing off WhatsApp and spreadsheets if the split is visibly fair and costs her almost no effort, and the agent’s judgement on late shares recovers more by the original due date than reminders do.</p>`;
+  }
+  return `<div class="overlay" data-action="closeSheet" data-self="1"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(title.replace(/<[^>]+>/g, ''))}">
+    <div class="hd">${p.sub ? b('', 'menuSub', {cls:'ghost sm', icon:'arrow', d:{id:p.id, sub:''}, title:'Back'}) : ''}<h2>${title}</h2>${b('', 'closeSheet', {cls:'ghost sm', icon:'x', title:'Close'})}</div>${body}</div></div>`;
+}
+
+/* ---------- Scenario drawer (not part of the product) ---------- */
+function events(){
+  const E = [], c = 'C', d = 'D';
+  E.push({id:'counts', d:'2026-09-01', label:`${ownerName() === 'you' ? 'You get' : T().staff + ' sends'} ${CYCLE} counts`, run:() => { if(!S.countsReceived) receiveCounts(S.countsOwner === 'operator' ? 'You' : 'System'); }});
+  E.push({id:'bill', d:'2026-09-03', label:'Billing day', gate:() => S.billed ? null : 'Issue invoices first — Usage & billing.', run:() => {}});
+  E.push({id:'remind', d:'2026-09-23', label:'Razorpay invoice reminders (7 days before due)', run:() => {
+    const to = EXT.filter(id => remaining(id) > 0);
+    to.forEach(id => S.sent.push({to:id, t:S.today, text:`Invoice ${S.invoices[id].no}: ${fmt(remaining(id))} due ${fd(DUE)}.`, auto:true}));
+    log('System', `Invoice reminders sent to ${to.map(nm).join(', ') || 'nobody'} by Razorpay Invoices.`);
+  }});
+  E.push({id:'reply', d:'2026-09-25', label:`${nm(c)} replies on WhatsApp`, run:() => {
+    if(remaining(c) === 0) return;
+    if(!handled(c)){ log('System', `${nm(c)} replied to the invoice reminder. Ledger only — the agent doesn't act on it.`); return; }
+    const k = classify(T().reply);
+    S.inbox.push({id:'d' + S.seq++, kind:'reply', from:c, t:S.today, quote:T().reply, intent:k.intent, why:k.why, said:'2026-10-20', status:'open'});
+    log('Payer', `${nm(c)} replied: “${T().reply}”`);
+    log('AI', `Read ${first(c)}'s reply as ${k.intent}. ${S.perms.plan ? `Drafted a plan sized to the ${fd(keyDate({noPlan:true}))} gap.` : 'Plans are off — flagged for you.'}`);
+  }});
+  if(S.planC && S.planC.sent && !S.planAccepted) E.push({id:'acceptPlan', d:dayNum(S.planC.on) >= dayNum('2026-09-26') ? addDays(S.planC.on, 1) : '2026-09-26', label:`${nm(c)} accepts the plan`, run:() => { if(S.planC && !S.planAccepted && remaining(c) > 0) acceptPlan(c); }});
+  E.push({id:'prelate', d:'2026-09-27', label:`Signal on ${nm(d)}`, run:() => {
+    if(remaining(d) === 0 || !handled(d) || !S.perms.flag) return;
+    S.inbox.push({id:'d' + S.seq++, kind:'prelate', from:d, t:S.today, status:'open', signal:`${first(d)} visits ${T().visit}; the next visit is Tue 29 Sept, the day before due. Paid late in 2 of the last 3 months, each time after a visit.`});
+    log('AI', `Flagged ${nm(d)}: likely to pay after the due date. Drafted one nudge.`);
+  }});
+  E.push({id:'payB', d:'2026-09-28', label:`${nm('B')} pays`, run:() => pay('B', remaining('B'), 'Payer', 'UPI')});
+  if(S.planC && S.planAccepted) E.push({id:'payC1', d:S.planC.d1 === DUE ? '2026-09-29' : S.planC.d1, label:`${nm(c)} pays instalment 1`, run:() => pay(c, sched(c)[0] ? sched(c)[0].amt : 0, 'Payer', 'instalment 1 · UPI')});
+  E.push({id:'due', d:DUE, label:'Original due date', run:() => { const late = EXT.filter(id => remaining(id) > 0); log('System', `Original due date. ${late.length ? 'Unpaid: ' + late.map(id => `${nm(id)} ${fmt(remaining(id))}`).join(', ') : 'All shares paid.'}`); }});
+  [...new Set(S.outflows.map(o => o.date))].sort().forEach(dt => E.push({id:'out:' + dt, d:dt, label:`Outflows: ${S.outflows.filter(o => o.date === dt).map(o => o.name).join(', ')}`, run:() => {
+    const inAcc = PAY.reduce((s, id) => s + S.paidDates[id].reduce((a, p) => a + p.amt, 0), 0);
+    const outSoFar = S.outflows.filter(o => dayNum(o.date) <= dayNum(dt)).reduce((s, o) => s + o.amt, 0);
+    const bal = inAcc - outSoFar;
+    log('System', `Paid ${S.outflows.filter(o => o.date === dt).map(o => `${o.name} ${fmt(o.amt)}`).join(', ')}. ${bal < 0 ? `Pool short by ${fmt(-bal)} — covered from ${S.operator}'s reserve.` : `Pool balance ${fmt(bal)}.`}`);
+  }}));
+  E.push({id:'payC2', d:'2026-10-18', label:`${nm(c)} pays the rest`, run:() => pay(c, remaining(c), 'Payer', S.planC && S.planAccepted ? 'instalment 2 · UPI' : 'UPI')});
+  E.push({id:'payD', d:S.plans[d] && S.plans[d].accepted ? S.plans[d].date : '2026-10-18', label:`${nm(d)} pays`, run:() => pay(d, remaining(d), 'Payer', 'UPI')});
+  E.push({id:'close', d:'2026-10-31', label:'Month closes', run:() => { S.closed = true; S.page = 'report'; log('System', `${CYCLE} cycle closed.`); }});
+  return E.filter(e => !S.done[e.id]).sort((a, b) => dayNum(a.d) - dayNum(b.d));
+}
+function drawer(){
+  const ev = events(), nx = ev[0], gate = nx && nx.gate && nx.gate();
+  const inj = [
+    [`${nm('B')} accepts the rule`, 'inject', 'acceptB', S.sentRule && S.consent.B === null && !S.billed],
+    [`${nm('C')} asks about a line`, 'inject', 'questionC', S.sentRule && S.consent.C === null && !S.billed],
+    [`${nm('C')} accepts the rule`, 'inject', 'acceptC', S.sentRule && S.consent.C === null && !S.billed],
+    [`${nm('D')} accepts the rule`, 'inject', 'acceptD', S.sentRule && S.consent.D === null && !S.billed],
+    [`${nm('D')} declines`, 'inject', 'declineD', S.sentRule && S.consent.D === null && !S.billed],
+    [`${T().staff === 'front desk' ? 'Front desk' : T().staff} sends counts`, 'inject', 'counts', !S.countsReceived],
+    [`${nm('C')} accepts the plan`, 'inject', 'planAccept', S.planC && S.planC.sent && !S.planAccepted && remaining('C') > 0],
+    [`${nm('C')} suggests other dates`, 'inject', 'planCounter', S.planC && S.planC.sent && !S.planAccepted && remaining('C') > 0 && !openItems().some(i => i.kind === 'counter')],
+    [`${nm('D')} asks for more time`, 'inject', 'timeD', S.billed && remaining('D') > 0 && !S.plans.D && !openItems().some(i => i.kind === 'request-time')]
+  ];
+  return `<aside class="drawer" aria-label="Scenario">
+    <div class="hd"><div class="row sb"><div><b>Scenario</b><small>Simulation controls — not part of the product.</small></div>${b('', 'toggleDrawer', {cls:'ghost sm', icon:'x', title:'Close'})}</div></div>
+    <h3>Time · <span class="mono">${fd(S.today)}</span></h3>
+    ${nx ? `${b(`Advance to ${fd(nx.d)} · ${esc(nx.label)}`, 'advance', {cls:'primary wide', icon:'clock', dis:!!gate})}${gate ? `<p class="reason">${gate}</p>` : ''}` : `<p class="small mute">The cycle is closed.</p>`}
+    <div style="margin-top:8px">${ev.slice(1, 7).map(e => `<div class="ev"><span class="mono">${fd(e.d)}</span><span>${esc(e.label)}</span></div>`).join('')}</div>
+    <h3>Stakeholder events</h3>
+    <div class="dcol">${inj.map(([l, a, arg, en]) => b(esc(l), a, {arg, cls:'sm', dis:!en || !S.onboarded})).join('')}</div>
+    <h3>Workspace</h3>
+    <div class="chips">${Object.keys(TPL).map(k => b(TPL[k].label, 'switchWs', {arg:k, cls:'chip ' + (S.tpl === k && S.onboarded ? 'on' : '')})).join('')}</div>
+    <h3>Shortcuts</h3>
+    <div class="dcol">${b('Play the default path to month end', 'playDefault', {cls:'sm', icon:'play'})}${b('Reset', 'reset', {cls:'sm danger', icon:'reset'})}</div>
+  </aside>`;
+}
+
+/* ============================================================
+   DOMAIN OPERATIONS
+   ============================================================ */
+function receiveCounts(who){
+  S.countsReceived = true; S.grid = false; S.countsDraft = null;
+  log(who || 'System', `${CYCLE} counts received from ${ownerName()}.`);
+  if(S.billed && S.provisional){
+    const actual = computeShares(S.lines, effCounts()).total, billed = S.billedShares, diff = {};
+    PAY.forEach(id => diff[id] = actual[id] - billed[id]);
+    S.trueUp = {on:S.today, billed:{...billed}, actual, diff};
+    S.provisional = false;
+    log('System', `True-up for next cycle: ${PAY.map(id => `${nm(id)} ${diff[id] >= 0 ? '+' : '−'}${fmt(Math.abs(diff[id]))}`).join(', ')}. Invoices stay as issued.`);
+  }
+}
+function doIssue(provisional){
+  const counts = provisional ? JSON.parse(JSON.stringify(S.prevCounts)) : effCounts();
+  S.billedCounts = counts;
+  S.billedShares = computeShares(S.lines, counts).total;
+  S.billed = true; S.provisional = !!provisional; S.billedOn = S.today;
+  const pf = T().prefix;
+  EXT.forEach((id, k) => S.invoices[id] = {no:`${pf}-2608-00${k + 2}`, va:`2223 3300 ${String(4417820 + k * 1137).padStart(8, '0').replace(/(\d{4})(\d{4})/, '$1 $2')}`, vpa:`${pf.toLowerCase()}.${id.toLowerCase()}@razorpay`});
+  pay('A', S.billedShares.A, 'System', 'your own share, booked');
+  log('System', `Issued ${provisional ? 'provisional ' : ''}invoices ${EXT.map(id => `${S.invoices[id].no} ${fmt(S.billedShares[id])}`).join(', ')} with one Smart Collect account each. Due ${fd(DUE)}.`);
+}
+function acceptRule(id){
+  S.consent[id] = true; delete S.declineReason[id];
+  log('Payer', `${nm(id)} accepted rule v${S.ruleVersion}.`);
+  S.inbox.filter(i => i.kind === 'question' && i.from === id && i.status === 'open').forEach(i => { i.status = 'auto'; i.outcome = 'Closed — they accepted the rule.'; });
+  syncActive();
+}
+function declineRule(id, reason){
+  S.consent[id] = false; S.declineReason[id] = reason || 'No reason given';
+  log('Payer', `${nm(id)} declined rule v${S.ruleVersion}: “${S.declineReason[id]}”. Ledger only.`);
+  syncActive();
+}
+function acceptPlan(id){
+  S.planAccepted = true;
+  S.plans.C = {...S.planC, accepted:true, viaAgent:true};
+  S.inbox.filter(i => i.kind === 'counter' && i.status === 'open').forEach(i => { i.status = 'auto'; i.outcome = 'Closed — they accepted the plan.'; });
+  log('Payer', `${nm(id)} accepted the plan: ${fmt(S.planC.inst1)} by ${fd(S.planC.d1)}${S.planC.inst2 ? `, ${fmt(S.planC.inst2)} by ${fd(S.planC.d2)}` : ''}.`);
+}
+function sendMsg(to, text, viaAgent){ S.sent.push({to, t:S.today, text, auto:false, via:viaAgent ? 'agent' : 'you'}); }
+function ruleEdited(){
+  if(S.sentRule){
+    S.ruleVersion++; S.sentRule = false;
+    EXT.forEach(i => S.consent[i] = null); S.declineReason = {};
+    log('System', `Rule changed after sending — now v${S.ruleVersion}. Acceptances reset; send v${S.ruleVersion} to continue.`);
+  }
+}
+function questionLine(id, key){
+  const L = S.lines.find(l => l.key === key), c = basisCounts();
+  const q = L.mode === 'count' ? `My ${L.unit} count shows ${c[L.unit][id]} — that looks high to me. How is it counted?` : `Why is ${L.name} split ${L.mode === 'third' ? 'this way' : 'equally'}?`;
+  S.inbox.push({id:'d' + S.seq++, kind:'question', from:id, t:S.today, status:'open', quote:q, key, lineName:L.name});
+  log('Payer', `${nm(id)} questioned “${L.name}”: “${q}”`);
+}
+function requestTime(id, date){
+  if(!handled(id)){ log('Payer', `${nm(id)} asked to pay by ${fd(date)}. Ledger only — passed to you without a proposal.`); toast(`Request sent to ${S.merchant}`); return; }
+  S.inbox.push({id:'d' + S.seq++, kind:'request-time', from:id, t:S.today, status:'open', date});
+  log('Payer', `${nm(id)} asked to pay by ${fd(date)}.`);
+  toast(`Request sent to ${S.merchant}`);
+}
+function counterOffer(id){
+  const rem = remaining(id), inst1 = Math.min(rem, 15000);
+  S.inbox.push({id:'d' + S.seq++, kind:'counter', from:id, t:S.today, status:'open', quote:`${num(inst1)} by 3 Oct ho jayega, baaki 20 Oct tak.`, inst1, d1:'2026-10-03', inst2:rem - inst1, d2:'2026-10-20'});
+  log('Payer', `${nm(id)} suggested different dates: ${fmt(inst1)} by 3 Oct, ${fmt(rem - inst1)} by 20 Oct.`);
+}
+function decide(i, status, outcome, text){
+  i.status = status; i.outcome = outcome; if(text) i.sentText = text; i.decidedAt = S.today;
+  S.editing[i.id] = undefined; delete S.editing[i.id]; S.dismissing = null;
+}
+function approveDraft(i, text, status){
+  sendMsg(i.from, text, true);
+  if(i.kind === 'reply'){
+    const p = planFor(i);
+    S.planC = {inst1:p.inst1, inst2:p.inst2, d1:p.d1, d2:p.d2, auto:p.auto, sent:true, on:S.today, text};
+    S.planAccepted = false;
+    decide(i, status, `Sent. Plan: ${fmt(p.inst1)} by ${fd(p.d1)}${p.inst2 ? `, ${fmt(p.inst2)} by ${fd(p.d2)}` : ''}. Original due ${fd(DUE)} unchanged.`, text);
+  } else decide(i, status, 'Nudge sent.', text);
+  log('You', `${status === 'edited' ? 'Edited and approved' : 'Approved'} the ${kindLabel(i)} for ${nm(i.from)}.`);
+  log('AI', `Sent to ${nm(i.from)} on WhatsApp in ${S.operator}'s name.`);
+}
+const findItem = id => S.inbox.find(i => i.id === id);
+
+/* ---------- CSV connector ---------- */
+function sampleCsv(){
+  const units = Object.keys(S.counts), rows = ['payer,date,resource,count,patient_name,patient_phone,referred_by'];
+  PAY.forEach(id => units.forEach((u, k) => { const n = (k === 0 ? AUG[0] : AUG[1])[id], h = Math.floor(n / 2);
+    rows.push(`${nm(id)},2026-08-14,${u},${h},R. Sharma,98xxxxxx12,self`); rows.push(`${nm(id)},2026-08-28,${u},${n - h},K. Iyer,98xxxxxx77,Dr Rao`); }));
+  return rows.join('\n');
+}
+function parseCsv(txt){
+  const lines = String(txt || '').trim().split(/\r?\n/).filter(Boolean);
+  if(lines.length < 2) return {error:'The sheet is empty.'};
+  const head = lines[0].split(',').map(h => h.trim().toLowerCase());
+  const keep = ['payer','date','resource','count'];
+  const missing = keep.filter(k => !head.includes(k));
+  if(missing.length) return {error:`Missing column${missing.length > 1 ? 's' : ''}: ${missing.join(', ')}.`};
+  const ix = {}; keep.forEach(k => ix[k] = head.indexOf(k));
+  const dropped = head.filter(h => !keep.includes(h));
+  const units = Object.keys(S.counts), counts = {};
+  units.forEach(u => counts[u] = {A:0,B:0,C:0,D:0});
+  let bad = 0, n = 0;
+  lines.slice(1).forEach(l => {
+    const r = l.split(',').map(x => x.trim());
+    const pv = (r[ix.payer] || '').toLowerCase();
+    const p = S.payers.find(x => x.name.toLowerCase() === pv || x.id.toLowerCase() === pv);
+    const u = units.find(x => x === (r[ix.resource] || '').toLowerCase() || x.replace(/s$/, '') === (r[ix.resource] || '').toLowerCase());
+    const c = +r[ix.count];
+    if(p && u && c >= 0 && !isNaN(c)){ counts[u][p.id] += c; n++; } else bad++;
+  });
+  return {counts, dropped, n, bad};
+}
+function applyCsv(txt){
+  const r = parseCsv(txt);
+  if(r.error){ S.csvMsg = {err:true, text:r.error}; return; }
+  S.counts = r.counts;
+  S.csvMsg = {err:false, text:`Read ${r.n} rows${r.bad ? `, skipped ${r.bad}` : ''}. Kept payer, date, resource, count.${r.dropped.length ? ` Dropped ${r.dropped.join(', ')} — identities never leave the connector.` : ''}`};
+  receiveCounts('You');
+  S.csvOpen = true;
+}
+
+/* ============================================================
+   ACTIONS — every button carries data-action; one dispatcher.
+   ============================================================ */
+const A = {
+  noop(){},
+  nav(el){ S.page = el.dataset.arg; S.sheet = null; if(S.page === 'decisions') S.replies = S.replies && openItems().length > 0; window.scrollTo(0, 0); },
+  goStep(el){ const i = +el.dataset.arg; if(i === 0){ S.page = 'setup'; S.setupStep = 'rule'; } else if(i === 1){ S.page = 'setup'; S.setupStep = ruleReady() ? 'invite' : 'rule'; } else if(i === 2) S.page = 'stakeholders'; else S.page = 'usage'; window.scrollTo(0, 0); },
+  openAbout(){ S.sheet = {kind:'about'}; },
+  closeSheet(el, ev){ if(el.dataset.self && ev && ev.target !== el) return; S.sheet = null; },
+  openSheet(el){ S.sheet = {kind:el.dataset.kind, payload:{id:el.dataset.id}}; },
+  toggleDrawer(){ S.drawer = !S.drawer; },
+  previewOnly(){ toast(`Preview — this is what ${nm('B')} will see after you send.`); },
+  copy(el){ copyText(el.dataset.text); },
+
+  // install
+  pickType(el){ S.ui.type = el.dataset.arg; },
+  instMerchant(el){ S.ui.merchant = el.value; },
+  instName(el){ S.ui.name = el.value; },
+  install(){
+    const {type, merchant, name} = S.ui;
+    fresh(type, true);
+    if(merchant.trim()) S.merchant = merchant.trim();
+    if(name.trim()){ S.operator = name.trim(); S.payers[0].name = name.trim(); }
+    log('You', `Workspace created · ${S.merchant} (${TPL[type].label}).`);
+  },
+
+  // setup
+  setupStep(el){ S.setupStep = el.dataset.arg; window.scrollTo(0, 0); },
+  setMerchant(el){ if(el.value.trim()) S.merchant = el.value.trim(); },
+  setPayerName(el){ if(!el.value.trim()) return; const p = P(el.dataset.id); p.name = el.value.trim(); if(p.id === 'A') S.operator = p.name.replace(/^Dr\.?\s+/, ''); },
+  setText(el){ S.text = el.value; },
+  draftRule(){
+    if(!S.text.trim()){ toast('Describe your arrangement first.'); return; }
+    const before = JSON.stringify(S.lines.map(l => [l.amount, l.mode, l.unit]));
+    const r = parseRule(S.text, tplLines(T()), Object.keys(S.counts));
+    S.lines = r.lines; S.rule = {lines:r.lines.length, confidence:r.confidence, hits:r.hits};
+    if(before !== JSON.stringify(S.lines.map(l => [l.amount, l.mode, l.unit]))) ruleEdited();
+    log('AI', `Drafted rule v${S.ruleVersion}: ${r.hits} of 4 lines recognised, confidence ${Math.round(r.confidence * 100)}%.`);
+  },
+  setLineAmount(el){ const L = S.lines.find(l => l.key === el.dataset.key); const v = parseAmt(el.value); if(v === L.amount) return; L.amount = v; L.found = true; S.manual = true; ruleEdited(); },
+  setLineSplit(el){
+    const L = S.lines.find(l => l.key === el.dataset.key), v = el.value;
+    if(!v) return;
+    if(v.startsWith('count:')){ L.mode = 'count'; L.unit = v.slice(6); } else { L.mode = v; L.unit = null; }
+    S.manual = true; ruleEdited();
+  },
+  setOutflow(el){ const o = S.outflows[+el.dataset.i], f = el.dataset.f; if(f === 'amt') o.amt = parseAmt(el.value); else if(f === 'date'){ if(el.value) o.date = el.value; } else o.name = el.value || o.name; },
+  addOutflow(){ S.outflows.push({name:'New outflow', amt:0, date:'2026-10-10'}); },
+  removeOutflow(el){ S.outflows.splice(+el.dataset.i, 1); },
+  setOwner(el){ S.countsOwner = el.dataset.arg; },
+  setBaseline(el){ S.baseline[+el.dataset.i][el.dataset.f] = parseAmt(el.value) || ''; },
+  skipBaseline(){ S.baselineSkipped = !S.baselineSkipped; },
+  togglePerm(el){ const k = el.dataset.arg; S.perms[k] = !S.perms[k]; log('You', `Permission “${({flag:'flag a discrepancy', draft:'draft reminders', plan:'propose a plan'})[k]}” ${S.perms[k] ? 'on' : 'off'}.`); },
+  toggleSource(el){ const k = el.dataset.arg; S.sources[k] = !S.sources[k]; log('You', `${k === 'invoices' ? 'Invoices & Smart Collect' : 'WhatsApp'} ${S.sources[k] ? 'connected' : 'disconnected'}.`); },
+  toInvite(){ if(!ruleReady()) return; S.setupStep = 'invite'; window.scrollTo(0, 0); },
+  setPhone(el){ P(el.dataset.id).phone = el.value.trim(); },
+  sendRule(){
+    if(!S.sources.whatsapp || !ruleReady()) return;
+    const again = S.sentRule;
+    if(again){ const to = EXT.filter(i => S.consent[i] === null); to.forEach(i => sendMsg(i, `Reminder: rule v${S.ruleVersion} for ${S.merchant} is waiting on your page.`, false)); log('You', `Re-sent rule v${S.ruleVersion} to ${to.map(nm).join(', ') || 'nobody'}.`); S.page = 'stakeholders'; return; }
+    S.sentRule = true; EXT.forEach(i => S.consent[i] = null); S.declineReason = {};
+    EXT.forEach(i => sendMsg(i, `${S.operator} shared the cost rule v${S.ruleVersion} for ${S.merchant}. See your share and accept here.`, false));
+    log('You', `Sent rule v${S.ruleVersion} to ${EXT.map(nm).join(', ')} on WhatsApp.`);
+    S.page = 'stakeholders'; window.scrollTo(0, 0);
+  },
+  goSend(){ S.page = 'setup'; S.setupStep = ruleReady() ? 'invite' : 'rule'; },
+
+  // stakeholders
+  openPage(el){ const id = el.dataset.arg; S.viewPayer = EXT.includes(id) ? id : 'C'; S.page = 'payer'; S.sheet = null; S.neft = false; window.scrollTo(0, 0); },
+  viewPayer(el){ S.viewPayer = el.dataset.arg; S.neft = false; S.declining = null; },
+  resendRule(el){ const id = el.dataset.arg; if(!S.sources.whatsapp) return; S.consent[id] = null; delete S.declineReason[id]; sendMsg(id, `Rule v${S.ruleVersion} again — your page has the math for every line.`, false); log('You', `Re-sent rule v${S.ruleVersion} to ${nm(id)}.`); },
+  adjustRule(){ S.page = 'setup'; S.setupStep = 'rule'; },
+
+  // usage & billing
+  toggleGrid(){ S.grid = !S.grid; S.countsDraft = S.grid ? JSON.parse(JSON.stringify(S.counts)) : null; S.csvOpen = false; },
+  setCountDraft(el){ S.countsDraft[el.dataset.key][el.dataset.id] = Math.max(0, Math.round(+el.value || 0)); },
+  saveCounts(){ S.counts = S.countsDraft; receiveCounts('You'); },
+  toggleCsv(){ S.csvOpen = !S.csvOpen; S.grid = false; if(!S.csvOpen) S.csvMsg = null; },
+  csvFile(el){ const f = el.files && el.files[0]; if(!f) return; const r = new FileReader(); r.onload = () => { applyCsv(r.result); render(); }; r.readAsText(f); },
+  csvSample(){ applyCsv(sampleCsv()); },
+  resolveExc(el){ const k = el.dataset.key, c = el.dataset.choice; if(c){ S.exc[k] = c; const e = exceptions().find(x => x.key === k); log('You', `${nm(e.id)} ${e.unit}: using ${c === 'second' ? S.secondSource.label + ' (' + e.sec + ')' : 'register (' + e.reg + ')'}.`); } else delete S.exc[k]; },
+  sendAsk(el){
+    const e = exceptions().find(x => x.key === el.dataset.key);
+    sendMsg('staff', `${T().staff}: which ${e.unit} count is right for ${nm(e.id)}?`, true);
+    log('You', `Asked ${T().staff} about ${nm(e.id)}'s ${e.unit} (register ${e.reg}, ${S.secondSource.label} ${e.sec}).`);
+    log('System', `${T().staff} replied: “Register sahi hai — ${Math.abs(e.sec - e.reg)} were calibration runs.”`);
+    S.exc[e.key] = 'register';
+    log('AI', `Resolved: using register (${e.reg}) for ${nm(e.id)}.`);
+    S.sheet = null; toast(`${T().staff} replied — using the register.`);
+  },
+  issue(){ if(issueBlock()) return; doIssue(false); },
+  issueProvisional(){ if(!S.sources.invoices || !ruleReady()) return; doIssue(true); },
+  toggleOpen(el){ const k = el.dataset.arg; S.open[k] = !S.open[k]; },
+  setRegister(el){ S.counts[el.dataset.key][el.dataset.id] = Math.max(0, Math.round(+el.value || 0)); delete S.exc[el.dataset.key + ':' + el.dataset.id]; },
+  connectSecond(){ S.secondSource = {unit:Object.keys(S.counts)[0], label:T().second, vals:{...SECOND}}; S.exc = {}; S.sheet = null; log('You', `Connected ${T().second} as a second source.`); },
+  disconnectSecond(){ S.secondSource = null; S.exc = {}; log('You', 'Disconnected the second source.'); },
+
+  // decisions
+  toggleWA(){ S.replies = !S.replies; },
+  chooseTone(el){ const i = findItem(el.dataset.id); if(!S.sources.whatsapp) return; S.tone = el.dataset.tone; log('You', `Chose a ${S.tone} tone.`); approveDraft(i, draftText(i, S.tone), 'approved'); },
+  changeTone(){ S.tone = null; },
+  approve(el){ const i = findItem(el.dataset.id); if(!S.sources.whatsapp) return; approveDraft(i, draftText(i, S.tone), 'approved'); },
+  editStart(el){ const i = findItem(el.dataset.id); S.editing[i.id] = draftText(i, S.tone || 'warm'); S.replies = false; },
+  editText(el){ S.editing[el.dataset.id] = el.value; },
+  editSend(el){ const i = findItem(el.dataset.id); if(!S.sources.whatsapp) return; const t = S.editing[i.id]; approveDraft(i, t, 'edited'); },
+  editCancel(el){ delete S.editing[el.dataset.id]; },
+  dismissStart(el){ S.dismissing = el.dataset.id; S.replies = false; },
+  dismissCancel(){ S.dismissing = null; },
+  dismiss(el){ const i = findItem(el.dataset.id); i.reason = el.dataset.reason; decide(i, 'dismissed', ''); log('You', `Dismissed the ${kindLabel(i)} for ${nm(i.from)}: ${i.reason}.`); },
+  reopen(el){ const i = findItem(el.dataset.id); i.status = 'open'; i.reason = null; i.outcome = null; log('You', `Reopened the ${kindLabel(i)} for ${nm(i.from)}.`); },
+  setPlan(el){
+    const i = findItem(el.dataset.id), f = el.dataset.f, p = planFor(i), rem = remaining(i.from);
+    const np = {inst1:p.inst1, d1:p.d1, d2:p.d2, auto:false};
+    if(f === 'inst1') np.inst1 = Math.min(rem, parseAmt(el.value)); else if(el.value) np[f] = el.value;
+    if(f === 'd1' && dayNum(np.d1) > dayNum(DUE)) np.d1 = DUE;
+    i.plan = np;
+  },
+  toggleExpectD(){ S.expectD = !S.expectD; },
+  qReplyLog(el){ const i = findItem(el.dataset.id), c = basisCounts(), L = S.lines.find(l => l.key === i.key);
+    const t = L.mode === 'count' ? `${first(i.from)}, from the ${ownerName() === 'you' ? '' : ownerName() + "'s "}register: your ${L.unit} for ${CYCLE} were ${c[L.unit][i.from]}. Your page has the full log. — ${S.operator}` : `${first(i.from)}, ${L.name} is ${L.mode === 'third' ? 'split by the fraction in the rule' : 'split equally'} — your page shows the math. — ${S.operator}`;
+    sendMsg(i.from, t, true); decide(i, 'approved', 'Replied with their usage log.', t); log('You', `Replied to ${nm(i.from)} with their usage log.`); },
+  qAdjust(el){ const i = findItem(el.dataset.id); decide(i, 'edited', 'Adjusting the rule instead.'); log('You', `Chose to adjust the rule after ${nm(i.from)}'s question.`); S.page = 'setup'; S.setupStep = 'rule'; },
+  rtAccept(el){ const i = findItem(el.dataset.id); S.plans[i.from] = {date:i.date, accepted:true, viaAgent:false}; const t = `${first(i.from)}, ${fd(i.date)} is fine. Your page shows the new date. — ${S.operator}`; sendMsg(i.from, t, true); decide(i, 'approved', `Plan date ${fd(i.date)}. Original due ${fd(DUE)} unchanged.`, t); log('You', `Accepted ${nm(i.from)}'s request to pay by ${fd(i.date)}.`); },
+  rtDecline(el){ const i = findItem(el.dataset.id); const t = `${first(i.from)}, we need it by ${fd(DUE)} as agreed — salaries go out right after. Agar mushkil hai, batao. — ${S.operator}`; sendMsg(i.from, t, true); decide(i, 'approved', 'Declined.', t); log('You', `Declined ${nm(i.from)}'s request for time.`); },
+  counterAccept(el){ const i = findItem(el.dataset.id); S.planC = {...S.planC, inst1:i.inst1, inst2:i.inst2, d1:i.d1, d2:i.d2, auto:false}; const t = `${first(i.from)}, theek hai — ${fmt(i.inst1)} by ${fd(i.d1)} and ${fmt(i.inst2)} by ${fd(i.d2)}. — ${S.operator}`; sendMsg(i.from, t, true); decide(i, 'approved', 'Their dates accepted.', t); log('You', `Accepted ${nm(i.from)}'s dates.`); acceptPlan(i.from); },
+  counterKeep(el){ const i = findItem(el.dataset.id); const t = `${first(i.from)}, ${fd(keyDate({noPlan:true}))} ko salary jaati hai — ${fmt(S.planC.inst1)} by ${fd(S.planC.d1)} zaroori hai. Baaki ${fd(S.planC.d2)} tak theek hai. — ${S.operator}`; sendMsg(i.from, t, true); decide(i, 'approved', 'Kept the original ask.', t); log('You', `Kept the original ask for ${nm(i.from)}.`); },
+
+  // stakeholder page (recorded as their actions)
+  acceptRule(el){ acceptRule(el.dataset.arg); toast(`${nm(el.dataset.arg)} accepted rule v${S.ruleVersion}`); },
+  declineStart(el){ S.declining = el.dataset.arg; S.declineDraft = ''; },
+  declineText(el){ S.declineDraft = el.value; },
+  declineCancel(){ S.declining = null; },
+  declineSend(el){ declineRule(el.dataset.arg, (S.declineDraft || '').trim()); S.declining = null; },
+  payNow(el){ const id = el.dataset.arg; pay(id, +el.dataset.amt || remaining(id), 'Payer', 'UPI'); toast(`${nm(id)} paid`); },
+  toggleNeft(){ S.neft = !S.neft; },
+  planAccept(el){ acceptPlan(el.dataset.arg); },
+  planCounter(el){ counterOffer(el.dataset.arg); toast('Dates sent to ' + S.operator); },
+  openMath(el){ S.sheet = {kind:'math', payload:{id:el.dataset.id, key:el.dataset.key}}; },
+  openMenu(el){ S.sheet = {kind:'menu', payload:{id:el.dataset.arg}}; },
+  menuSub(el){ S.sheet = {kind:'menu', payload:{id:el.dataset.id, sub:el.dataset.sub || ''}}; },
+  questionLine(el){ questionLine(el.dataset.id, el.dataset.key); S.sheet = null; toast(`Question sent to ${S.merchant}`); },
+  requestTime(el){ requestTime(el.dataset.id, el.dataset.date); S.sheet = null; },
+
+  // activity
+  logFilter(el){ S.logFilter = el.dataset.arg; },
+  copyLog(){ copyText(S.log.filter(l => S.logFilter === 'all' || l.who === S.logFilter).map(l => `${fd(l.t)}\t${l.who}\t${l.what}`).join('\n')); },
+
+  // scenario
+  advance(){ advance(); },
+  inject(el){
+    const k = el.dataset.arg;
+    if(k === 'acceptB') acceptRule('B');
+    else if(k === 'acceptC') acceptRule('C');
+    else if(k === 'acceptD') acceptRule('D');
+    else if(k === 'declineD') declineRule('D', `Utilities should be by hours — I'm only here ${T().visit}.`);
+    else if(k === 'questionC'){ const L = S.lines.find(l => l.mode === 'count') || S.lines[0]; questionLine('C', L.key); }
+    else if(k === 'counts') receiveCounts(S.countsOwner === 'operator' ? 'You' : 'System');
+    else if(k === 'planAccept') acceptPlan('C');
+    else if(k === 'planCounter') counterOffer('C');
+    else if(k === 'timeD') requestTime('D', '2026-10-07');
+  },
+  switchWs(el){ const k = el.dataset.arg; fresh(k, true); S.drawer = true; log('System', `Switched workspace to ${TPL[k].label}.`); },
+  reset(){ fresh('clinic', false); S.drawer = false; try{ localStorage.removeItem(LS); }catch(e){} },
+  playDefault(){ playDefault(); }
+};
+function advance(){
+  const e = events()[0];
+  if(!e) return;
+  const g = e.gate && e.gate();
+  if(g){ toast(g); return; }
+  if(dayNum(e.d) > dayNum(S.today)) S.today = e.d;
+  S.done[e.id] = true;
+  e.run();
+}
+function playDefault(){
+  fresh('clinic', true);
+  log('You', 'Workspace created · Meera Diagnostics (Clinic / diagnostics).');
+  A.draftRule(); S.setupStep = 'invite';
+  A.sendRule();
+  EXT.forEach(acceptRule);
+  for(let k = 0; k < 60 && !S.closed; k++){
+    const e = events()[0];
+    if(!e) break;
+    if(e.gate && e.gate()){
+      if(!S.countsReceived) receiveCounts('System');
+      openExc().forEach(x => S.exc[x.key] = 'register');
+      if(dayNum(e.d) > dayNum(S.today)) S.today = e.d;
+      doIssue(false);
+    }
+    advance();
+    openItems().forEach(i => {
+      if(i.kind === 'reply'){ if(!S.tone){ S.tone = 'warm'; log('You', 'Chose a warm tone.'); } approveDraft(i, draftText(i, S.tone), 'approved'); }
+      else if(i.kind === 'prelate') approveDraft(i, draftText(i, S.tone || 'warm'), 'approved');
+    });
+  }
+  S.drawer = false; S.page = 'report';
+}
+
+/* ============================================================
+   RUNTIME — dispatcher, render, self-check, persistence
+   ============================================================ */
+const LS = 'shared-collect-v8';
+function run(name, el, ev){
+  if(!A[name]){ console.error('UNKNOWN ACTION', name); return; }
+  A[name](el, ev);
+  render();
+}
+document.addEventListener('click', ev => {
+  const el = ev.target.closest('[data-action]');
+  if(!el || el.disabled) return;
+  if(el.matches('input,select,textarea')) return;
+  if(el.dataset.self && ev.target !== el) return;
+  run(el.dataset.action, el, ev);
+});
+document.addEventListener('change', ev => {
+  const el = ev.target;
+  if(!el.matches || !el.matches('input[data-action],select[data-action],textarea[data-action]')) return;
+  run(el.dataset.action, el, ev);
+});
+document.addEventListener('input', ev => {
+  const el = ev.target;
+  if(el.dataset && el.dataset.live){ if(A[el.dataset.live]) A[el.dataset.live](el); else console.error('UNKNOWN ACTION', el.dataset.live); save(); }
+});
+document.addEventListener('keydown', ev => { if(ev.key === 'Escape' && (S.sheet || S.drawer)){ if(S.sheet) S.sheet = null; else S.drawer = false; render(); } });
+function selfCheck(root){
+  root.querySelectorAll('button').forEach(btn => {
+    const a = btn.dataset.action;
+    if(!a) console.error('UNWIRED BUTTON', (btn.textContent || btn.getAttribute('aria-label') || '').trim().slice(0, 60));
+    else if(!A[a]) console.error('UNKNOWN ACTION', a);
+  });
+  root.querySelectorAll('[data-action]:not(button)').forEach(n => { if(!A[n.dataset.action]) console.error('UNKNOWN ACTION', n.dataset.action); });
+  root.querySelectorAll('[data-live]').forEach(n => { if(!A[n.dataset.live]) console.error('UNKNOWN ACTION', n.dataset.live); });
+}
+function render(){
+  syncActive();
+  const root = document.getElementById('app');
+  root.innerHTML = shell();
+  selfCheck(root);
+  save();
+}
+function save(){ try{ localStorage.setItem(LS, JSON.stringify(S)); }catch(e){} }
+function load(){ try{ const s = JSON.parse(localStorage.getItem(LS) || 'null'); if(s && s.payers && s.lines) return s; }catch(e){} return null; }
+let toastT;
+function toast(msg){ const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2600); }
+function copyText(text){
+  const fallback = () => { try{ const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); const ok = document.execCommand('copy'); ta.remove(); toast(ok ? 'Copied' : 'Copy blocked here — select the text instead'); }catch(e){ toast('Copy blocked here — select the text instead'); } };
+  try{ if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => toast('Copied'), fallback); else fallback(); }catch(e){ fallback(); }
+}
+
+S = load() || fresh('clinic', false);
+render();
+</script>
